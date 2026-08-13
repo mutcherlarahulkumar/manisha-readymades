@@ -71,7 +71,7 @@ export function LoadingState({
               bgcolor: 'background.paper',
             }}
           >
-            <Skeleton variant="rectangular" sx={{ aspectRatio: '3 / 4', borderRadius: 0 }} />
+            <Skeleton variant="rectangular" sx={{ aspectRatio: '4 / 5', borderRadius: 0 }} />
             <Box sx={{ p: INNER_SPACING }}>
               <Skeleton width="45%" height={12} />
               <Skeleton width="90%" height={16} sx={{ mt: 0.75 }} />

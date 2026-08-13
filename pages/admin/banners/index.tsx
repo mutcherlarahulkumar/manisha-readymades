@@ -1,56 +1,82 @@
 /**
- * Banner management: what appears at the top of the storefront and in the hero.
+ * Banner management.
+ *
+ * The storefront has exactly two banner slots, so this screen presents exactly
+ * two editors rather than a list of records with a position dropdown. The old
+ * arrangement let several banners claim the same position while only one of
+ * them rendered, and offered a third position that rendered nowhere at all.
  *
  * @module pages/admin/banners/index
  */
-import AddIcon from '@mui/icons-material/Add';
+import CampaignIcon from '@mui/icons-material/Campaign';
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
+import ImageIcon from '@mui/icons-material/Image';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
-import IconButton from '@mui/material/IconButton';
+import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { Form, Formik, type FormikHelpers } from 'formik';
-import { useMemo, useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { AsyncState } from '@/components/common/StateViews';
-import {
-  FormCheckboxField,
-  FormDateField,
-  FormSelectField,
-  FormTextField,
-  type SelectOption,
-} from '@/components/form/fields';
+import { FormCheckboxField, FormDateField, FormTextField } from '@/components/form/fields';
+import { FormRow } from '@/components/form/FormLayout';
 import { ImageUploader } from '@/components/form/ImageUploader';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { useResource } from '@/hooks/useResource';
 import { api } from '@/lib/http';
 import { notifyError, notifySuccess } from '@/lib/toast';
-import { INNER_SPACING } from '@/theme/spacing';
-import { BANNER_POSITIONS, type Banner, type BannerPosition } from '@/types/models';
-import { formatDate } from '@/utils/format';
+import { RADIUS, SURFACE } from '@/theme/tokens';
+import type { Banner, BannerPosition } from '@/types/models';
 import { bannerSchema, type BannerFormValues } from '@/validation/marketing.schema';
 
-/** Where each position renders, explained for the admin. */
-const POSITION_LABEL: Record<BannerPosition, string> = {
-  top: 'Announcement strip — text at the very top',
-  hero: 'Home page hero — large background image',
-  promo: 'Promotional block',
-};
+/** How each slot is introduced to the admin. */
+const SLOTS: ReadonlyArray<{
+  position: BannerPosition;
+  title: string;
+  description: string;
+  icon: ReactNode;
+}> = [
+  {
+    position: 'top',
+    title: 'Announcement bar',
+    description:
+      'A single line across the very top of every page. Text only — add a button if it should lead somewhere.',
+    icon: <CampaignIcon />,
+  },
+  {
+    position: 'hero',
+    title: 'Home page hero',
+    description:
+      'The large panel at the top of the home page. The image sits beside the headline; without one, the newest featured product stands in.',
+    icon: <ImageIcon />,
+  },
+];
+
+/**
+ * Builds the form's starting values for a slot.
+ *
+ * @param position - Which slot is being edited.
+ * @param banner - The banner currently in that slot, if any.
+ * @returns Values for Formik.
+ */
+function initialValues(position: BannerPosition, banner: Banner | undefined): BannerFormValues {
+  return {
+    title: banner?.title ?? '',
+    subtitle: banner?.subtitle ?? undefined,
+    image: banner?.image ?? null,
+    link: banner?.link ?? undefined,
+    ctaLabel: banner?.ctaLabel ?? undefined,
+    position,
+    startsAt: banner?.startsAt ? new Date(banner.startsAt) : null,
+    endsAt: banner?.endsAt ? new Date(banner.endsAt) : null,
+    isActive: banner?.isActive ?? true,
+  } as unknown as BannerFormValues;
+}
 
 /**
  * The banner management screen.
@@ -59,48 +85,19 @@ const POSITION_LABEL: Record<BannerPosition, string> = {
  */
 export default function AdminBannersPage(): JSX.Element {
   const { data, isLoading, error, refresh } = useResource<Banner[]>('/api/banners');
-  const [editing, setEditing] = useState<Banner | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState<Banner | null>(null);
+  const [pendingClear, setPendingClear] = useState<Banner | null>(null);
 
   const banners = data ?? [];
-
-  const positionOptions = useMemo<SelectOption[]>(
-    () => BANNER_POSITIONS.map((position) => ({ value: position, label: POSITION_LABEL[position] })),
-    [],
-  );
-
-  /** A blank banner. The image is required, so it starts unset and is validated. */
-  const blankBanner = useMemo(
-    () =>
-      ({
-        title: '',
-        subtitle: undefined,
-        image: undefined,
-        link: undefined,
-        position: 'top',
-        sortOrder: 0,
-        startsAt: null,
-        endsAt: null,
-        isActive: true,
-      }) as unknown as BannerFormValues,
-    [],
-  );
 
   async function handleSubmit(
     values: BannerFormValues,
     helpers: FormikHelpers<BannerFormValues>,
   ): Promise<void> {
     try {
-      if (editing) {
-        await api(`/api/banners/${editing._id}`, { method: 'PUT', body: values });
-        notifySuccess('Banner updated');
-      } else {
-        await api('/api/banners', { method: 'POST', body: values });
-        notifySuccess('Banner created');
-      }
-      setEditing(null);
-      setIsCreating(false);
+      // One endpoint for both slots: posting a position replaces whatever is
+      // in it, so there is no create/update distinction to get wrong.
+      await api('/api/banners', { method: 'POST', body: values });
+      notifySuccess('Saved');
       await refresh();
     } catch (submitError) {
       notifyError(submitError, 'Could not save this banner.');
@@ -109,202 +106,178 @@ export default function AdminBannersPage(): JSX.Element {
     }
   }
 
-  async function handleDelete(): Promise<void> {
-    if (!pendingDelete) return;
+  async function handleClear(): Promise<void> {
+    if (!pendingClear) return;
     try {
-      await api(`/api/banners/${pendingDelete._id}`, { method: 'DELETE' });
-      notifySuccess('Banner deleted');
-      setPendingDelete(null);
+      await api(`/api/banners/${pendingClear._id}`, { method: 'DELETE' });
+      notifySuccess('Removed');
+      setPendingClear(null);
       await refresh();
     } catch (deleteError) {
-      notifyError(deleteError, 'Could not delete this banner.');
+      notifyError(deleteError, 'Could not remove this banner.');
     }
   }
 
   return (
-    <AdminLayout
-      title="Banners"
-      subtitle="Control what visitors see at the top of the site"
-      action={
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsCreating(true)}>
-          New banner
-        </Button>
-      }
-    >
-      <AsyncState
-        isLoading={isLoading}
-        error={error}
-        isEmpty={banners.length === 0}
-        onRetry={() => void refresh()}
-        empty={{
-          title: 'No banners yet',
-          description: 'Add an announcement strip or a hero image for the home page.',
-          action: (
-            <Button variant="contained" onClick={() => setIsCreating(true)}>
-              Add banner
-            </Button>
-          ),
-        }}
-      >
-        <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Image</TableCell>
-                <TableCell>Title</TableCell>
-                <TableCell>Position</TableCell>
-                <TableCell>Schedule</TableCell>
-                <TableCell align="right">Order</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {banners.map((banner) => (
-                <TableRow key={banner._id} hover>
-                  <TableCell>
-                    <Box sx={{ width: 72, height: 40, borderRadius: 1, overflow: 'hidden', bgcolor: 'grey.100' }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary asset. */}
-                      <img
-                        src={banner.image.url}
-                        alt=""
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {banner.title}
-                    </Typography>
-                    {banner.subtitle && (
-                      <Typography variant="caption" color="text.secondary">
-                        {banner.subtitle}
+    <AdminLayout title="Banners" subtitle="The two slots visitors see on the storefront">
+      <AsyncState isLoading={isLoading} error={error} isEmpty={false} onRetry={refresh}>
+        <Stack spacing={3} sx={{ maxWidth: 780 }}>
+          {SLOTS.map((slot) => {
+            const banner = banners.find((item) => item.position === slot.position);
+            const isTop = slot.position === 'top';
+
+            return (
+              <Paper
+                key={slot.position}
+                variant="outlined"
+                sx={{ borderRadius: `${RADIUS.md}px`, overflow: 'hidden' }}
+              >
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  alignItems="flex-start"
+                  sx={{ p: 2, bgcolor: SURFACE.subtle }}
+                >
+                  <Box
+                    aria-hidden
+                    sx={{
+                      display: 'grid',
+                      placeItems: 'center',
+                      flexShrink: 0,
+                      width: 40,
+                      height: 40,
+                      borderRadius: `${RADIUS.sm}px`,
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                    }}
+                  >
+                    {slot.icon}
+                  </Box>
+
+                  <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                    <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap' }}>
+                      <Typography variant="h5" component="h2">
+                        {slot.title}
                       </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>{banner.position}</TableCell>
-                  <TableCell>
-                    {banner.startsAt || banner.endsAt
-                      ? `${formatDate(banner.startsAt)} – ${formatDate(banner.endsAt)}`
-                      : 'Always'}
-                  </TableCell>
-                  <TableCell align="right">{banner.sortOrder}</TableCell>
-                  <TableCell>
-                    <Chip
-                      size="small"
-                      label={banner.isActive ? 'Active' : 'Off'}
-                      color={banner.isActive ? 'success' : 'default'}
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Edit">
-                      <IconButton size="small" onClick={() => setEditing(banner)}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton size="small" color="error" onClick={() => setPendingDelete(banner)}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                      <Chip
+                        size="small"
+                        label={banner ? (banner.isActive ? 'Live' : 'Hidden') : 'Empty'}
+                        color={banner ? (banner.isActive ? 'success' : 'default') : 'default'}
+                        variant={banner?.isActive ? 'filled' : 'outlined'}
+                      />
+                    </Stack>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      {slot.description}
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <Divider />
+
+                <Formik
+                  initialValues={initialValues(slot.position, banner)}
+                  validationSchema={bannerSchema}
+                  onSubmit={handleSubmit}
+                  enableReinitialize
+                >
+                  {({ isSubmitting }) => (
+                    <Form noValidate>
+                      <Stack spacing={2} sx={{ p: { xs: 2, md: 2.5 } }}>
+                        <FormTextField
+                          name="title"
+                          label={isTop ? 'Announcement text' : 'Headline'}
+                          required
+                          helperText={
+                            isTop
+                              ? 'For example: Free delivery on orders above 100 pieces.'
+                              : 'Shown as the large heading on the home page.'
+                          }
+                        />
+
+                        {isTop ? (
+                          <FormRow>
+                            <FormTextField
+                              name="ctaLabel"
+                              label="Button label"
+                              helperText="Optional. Leave both fields empty for text only."
+                            />
+                            <FormTextField
+                              name="link"
+                              label="Button link"
+                              helperText="A path like /products, or a full https:// URL."
+                            />
+                          </FormRow>
+                        ) : (
+                          <>
+                            <FormTextField
+                              name="subtitle"
+                              label="Supporting line"
+                              helperText="Optional. One sentence beneath the headline."
+                            />
+                            <ImageUploader
+                              name="image"
+                              label="Hero image"
+                              folder="banners"
+                              single
+                              helperText="Landscape works best — it sits beside the headline."
+                            />
+                          </>
+                        )}
+
+                        <Divider />
+
+                        <FormCheckboxField
+                          name="isActive"
+                          label={isTop ? 'Show the announcement bar' : 'Show this hero'}
+                        />
+
+                        <FormRow>
+                          <FormDateField
+                            name="startsAt"
+                            label="Show from"
+                            clearable
+                            helperText="Optional. Leave empty to start immediately."
+                          />
+                          <FormDateField
+                            name="endsAt"
+                            label="Show until"
+                            clearable
+                            helperText="Optional. Leave empty to run indefinitely."
+                          />
+                        </FormRow>
+
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          {banner && (
+                            <Button
+                              color="error"
+                              startIcon={<DeleteIcon />}
+                              onClick={() => setPendingClear(banner)}
+                              disabled={isSubmitting}
+                            >
+                              Remove
+                            </Button>
+                          )}
+                          <Button type="submit" variant="contained" disabled={isSubmitting}>
+                            {isSubmitting ? 'Saving…' : 'Save'}
+                          </Button>
+                        </Stack>
+                      </Stack>
+                    </Form>
+                  )}
+                </Formik>
+              </Paper>
+            );
+          })}
+        </Stack>
       </AsyncState>
 
-      <Dialog
-        open={isCreating || editing !== null}
-        onClose={() => {
-          setEditing(null);
-          setIsCreating(false);
-        }}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>{editing ? 'Edit banner' : 'New banner'}</DialogTitle>
-        <DialogContent dividers>
-          <Formik
-            initialValues={
-              editing
-                ? ({
-                    title: editing.title,
-                    subtitle: editing.subtitle,
-                    image: editing.image,
-                    link: editing.link,
-                    position: editing.position,
-                    sortOrder: editing.sortOrder,
-                    startsAt: editing.startsAt ? new Date(editing.startsAt) : null,
-                    endsAt: editing.endsAt ? new Date(editing.endsAt) : null,
-                    isActive: editing.isActive,
-                  } as unknown as BannerFormValues)
-                : blankBanner
-            }
-            validationSchema={bannerSchema}
-            onSubmit={handleSubmit}
-            enableReinitialize
-          >
-            {({ isSubmitting }) => (
-              <Form noValidate>
-                <Stack spacing={INNER_SPACING}>
-                  <FormTextField name="title" label="Title" required />
-                  <FormTextField name="subtitle" label="Subtitle" />
-                  <ImageUploader name="image" label="Banner image" folder="banners" single />
-                  <FormTextField
-                    name="link"
-                    label="Link"
-                    helperText="Optional. A full URL, or a path such as /products."
-                  />
-                  <FormSelectField name="position" label="Position" options={positionOptions} required />
-                  <FormTextField
-                    name="sortOrder"
-                    label="Sort order"
-                    type="number"
-                    helperText="Lower numbers appear first."
-                  />
-                  <FormDateField
-                    name="startsAt"
-                    label="Show from"
-                    clearable
-                    helperText="Leave empty to show immediately."
-                  />
-                  <FormDateField
-                    name="endsAt"
-                    label="Show until"
-                    clearable
-                    helperText="Leave empty to show indefinitely."
-                  />
-                  <FormCheckboxField name="isActive" label="Active" />
-
-                  <Stack direction="row" spacing={INNER_SPACING} justifyContent="flex-end">
-                    <Button
-                      onClick={() => {
-                        setEditing(null);
-                        setIsCreating(false);
-                      }}
-                      disabled={isSubmitting}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" variant="contained" disabled={isSubmitting}>
-                      {isSubmitting ? 'Saving…' : 'Save'}
-                    </Button>
-                  </Stack>
-                </Stack>
-              </Form>
-            )}
-          </Formik>
-        </DialogContent>
-      </Dialog>
-
       <ConfirmDialog
-        open={pendingDelete !== null}
-        title="Delete banner?"
-        message={`"${pendingDelete?.title ?? ''}" and its image will be permanently removed.`}
-        onConfirm={handleDelete}
-        onCancel={() => setPendingDelete(null)}
+        open={pendingClear !== null}
+        title="Remove this banner?"
+        message="It will stop appearing on the storefront. You can set it up again at any time."
+        confirmLabel="Remove"
+        onConfirm={handleClear}
+        onCancel={() => setPendingClear(null)}
       />
     </AdminLayout>
   );
