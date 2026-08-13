@@ -10,18 +10,18 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import UploadIcon from '@mui/icons-material/CloudUpload';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import FormHelperText from '@mui/material/FormHelperText';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useField, useFormikContext } from 'formik';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 
 import { api } from '@/lib/http';
 import { notifyError } from '@/lib/toast';
 import { INNER_SPACING } from '@/theme/spacing';
+import { RADIUS, SHADOW, SURFACE } from '@/theme/tokens';
 import type { ImageAsset } from '@/types/models';
 
 /** Response from `/api/uploads`. */
@@ -164,8 +164,50 @@ export function ImageUploader({
     [assets, name, setFieldValue, single],
   );
 
+  /**
+   * Tracks nested drag events.
+   *
+   * `dragleave` fires every time the pointer crosses into a child element, so a
+   * boolean flag makes the zone flicker as the cursor moves over the text
+   * inside it. Counting enter/leave pairs means the highlight only clears when
+   * the pointer has genuinely left the zone.
+   */
+  const dragDepth = useRef(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const isDisabled = isUploading || remaining <= 0;
+
+  const handleDragEnter = useCallback(
+    (event: DragEvent<HTMLElement>): void => {
+      event.preventDefault();
+      if (isDisabled) return;
+      dragDepth.current += 1;
+      setIsDragging(true);
+    },
+    [isDisabled],
+  );
+
+  const handleDragLeave = useCallback((event: DragEvent<HTMLElement>): void => {
+    event.preventDefault();
+    dragDepth.current = Math.max(dragDepth.current - 1, 0);
+    if (dragDepth.current === 0) setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (event: DragEvent<HTMLElement>): void => {
+      event.preventDefault();
+      dragDepth.current = 0;
+      setIsDragging(false);
+      if (isDisabled) return;
+      if (event.dataTransfer?.files?.length) void handleFiles(event.dataTransfer.files);
+    },
+    [handleFiles, isDisabled],
+  );
+
   const errorText = typeof meta.error === 'string' && meta.touched ? meta.error : helperText;
   const isError = typeof meta.error === 'string' && meta.touched;
+
+  const acceptedLabel = allowDocuments ? 'PNG, JPG, WebP or PDF' : 'PNG, JPG or WebP';
 
   return (
     <Box>
@@ -173,13 +215,126 @@ export function ImageUploader({
         {label}
       </Typography>
 
+      {/*
+        A large drop target rather than a small button. Uploading imagery is the
+        main task on these forms, and the control should be sized like the
+        primary thing on the screen — big enough to drag a file onto without
+        aiming, and stating its own limits so a rejected file is a surprise
+        that never happens.
+      */}
+      <Box
+        onDragEnter={handleDragEnter}
+        onDragOver={(event) => event.preventDefault()}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        sx={{
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 1,
+          px: 3,
+          py: { xs: 4, md: 5 },
+          textAlign: 'center',
+          borderRadius: `${RADIUS.md}px`,
+          border: '2px dashed',
+          borderColor: isDragging ? 'primary.main' : isError ? 'error.main' : SURFACE.borderStrong,
+          bgcolor: isDragging ? 'rgba(31, 58, 138, 0.04)' : SURFACE.subtle,
+          transition: 'border-color 180ms, background-color 180ms',
+          cursor: isDisabled ? 'not-allowed' : 'pointer',
+          opacity: isDisabled && !isUploading ? 0.6 : 1,
+          '&:hover': isDisabled ? undefined : { borderColor: 'primary.main' },
+          // The file input is invisible but still focusable, so the zone shows
+          // a focus ring when a keyboard user tabs to it.
+          '&:focus-within': {
+            borderColor: 'primary.main',
+            boxShadow: '0 0 0 3px rgba(31, 58, 138, 0.12)',
+          },
+        }}
+      >
+        {isUploading ? (
+          <>
+            <CircularProgress size={28} />
+            <Typography variant="body2" color="text.secondary">
+              Uploading…
+            </Typography>
+          </>
+        ) : (
+          <>
+            <Box
+              aria-hidden
+              sx={{
+                display: 'grid',
+                placeItems: 'center',
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                bgcolor: 'background.paper',
+                color: 'primary.main',
+                border: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <UploadIcon />
+            </Box>
+
+            <Typography sx={{ fontWeight: 600 }}>
+              {remaining <= 0
+                ? single
+                  ? 'Replace the file below to change it'
+                  : `Maximum of ${limit} files reached`
+                : 'Drag and drop, or click to browse'}
+            </Typography>
+
+            <Typography variant="caption" color="text.secondary">
+              {acceptedLabel} · up to 8 MB
+              {!single && remaining > 0 && ` · ${remaining} of ${limit} remaining`}
+            </Typography>
+          </>
+        )}
+
+        {/*
+          Stretched across the whole zone so the entire area is clickable and
+          accepts a native drop, while remaining a real focusable input for
+          keyboard and assistive technology.
+        */}
+        <Box
+          component="input"
+          ref={inputRef}
+          type="file"
+          aria-label={label}
+          multiple={!single}
+          disabled={isDisabled}
+          accept={allowDocuments ? `${IMAGE_TYPES},application/pdf` : IMAGE_TYPES}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+            if (event.target.files) void handleFiles(event.target.files);
+          }}
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            opacity: 0,
+            cursor: 'inherit',
+            // Firefox ignores pointer events on a zero-opacity file input's
+            // button unless the whole control is stretched like this.
+            fontSize: 0,
+          }}
+        />
+      </Box>
+
       {assets.length > 0 && (
         <Box
           sx={{
             display: 'grid',
             gap: INNER_SPACING,
-            gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' },
-            mb: INNER_SPACING,
+            gridTemplateColumns: {
+              xs: 'repeat(3, minmax(0, 1fr))',
+              sm: 'repeat(4, minmax(0, 1fr))',
+              md: 'repeat(6, minmax(0, 1fr))',
+            },
+            mt: INNER_SPACING,
           }}
         >
           {assets.map((asset) => (
@@ -189,15 +344,19 @@ export function ImageUploader({
                 position: 'relative',
                 border: '1px solid',
                 borderColor: 'divider',
-                borderRadius: 1,
+                borderRadius: `${RADIUS.sm}px`,
                 overflow: 'hidden',
                 aspectRatio: '1 / 1',
+                bgcolor: SURFACE.subtle,
+                '&:hover .uploader__remove': { opacity: 1 },
               }}
             >
               {/* Cloudinary serves PDFs with a .pdf extension; show a label instead. */}
               {asset.url.endsWith('.pdf') ? (
-                <Stack alignItems="center" justifyContent="center" sx={{ height: '100%' }}>
-                  <Typography variant="caption">PDF attachment</Typography>
+                <Stack alignItems="center" justifyContent="center" sx={{ height: '100%', p: 1 }}>
+                  <Typography variant="caption" align="center">
+                    PDF attachment
+                  </Typography>
                 </Stack>
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element -- Cloudinary URLs are already optimised.
@@ -208,6 +367,7 @@ export function ImageUploader({
                 />
               )}
               <IconButton
+                className="uploader__remove"
                 size="small"
                 aria-label={`Remove ${asset.alt ?? 'image'}`}
                 onClick={() => handleRemove(asset.publicId)}
@@ -216,7 +376,12 @@ export function ImageUploader({
                   top: 4,
                   right: 4,
                   bgcolor: 'background.paper',
+                  boxShadow: SHADOW.sm,
+                  // Always visible on touch, where there is no hover to reveal it.
+                  opacity: { xs: 1, md: 0 },
+                  transition: 'opacity 160ms',
                   '&:hover': { bgcolor: 'background.paper' },
+                  '&:focus-visible': { opacity: 1 },
                 }}
               >
                 <DeleteIcon fontSize="small" color="error" />
@@ -225,25 +390,6 @@ export function ImageUploader({
           ))}
         </Box>
       )}
-
-      <Button
-        component="label"
-        variant="outlined"
-        startIcon={isUploading ? <CircularProgress size={16} /> : <UploadIcon />}
-        disabled={isUploading || remaining <= 0}
-      >
-        {isUploading ? 'Uploading…' : single ? 'Choose file' : `Add files (${remaining} left)`}
-        <input
-          ref={inputRef}
-          type="file"
-          hidden
-          multiple={!single}
-          accept={allowDocuments ? `${IMAGE_TYPES},application/pdf` : IMAGE_TYPES}
-          onChange={(event) => {
-            if (event.target.files) void handleFiles(event.target.files);
-          }}
-        />
-      </Button>
 
       {errorText && <FormHelperText error={isError}>{errorText}</FormHelperText>}
     </Box>
