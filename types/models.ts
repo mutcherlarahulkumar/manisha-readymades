@@ -48,7 +48,7 @@ export const DISCOUNT_TYPES = ['percent', 'flat'] as const;
 export type DiscountType = (typeof DISCOUNT_TYPES)[number];
 
 /** Where a banner is rendered. */
-export const BANNER_POSITIONS = ['top', 'hero', 'promo'] as const;
+export const BANNER_POSITIONS = ['top', 'hero'] as const;
 /** @see BANNER_POSITIONS */
 export type BannerPosition = (typeof BANNER_POSITIONS)[number];
 
@@ -193,11 +193,19 @@ export interface Discount extends BaseEntity {
 export interface Banner extends BaseEntity {
   title: string;
   subtitle?: string;
-  image: ImageAsset;
+  /**
+   * Required for the `hero` slot, which is a picture. The `top` slot is a line
+   * of text and carries no image at all.
+   */
+  image?: ImageAsset;
   /** Internal or external destination; empty when the banner is not clickable. */
   link?: string;
+  /**
+   * Text of the announcement bar's button. Present only with {@link Banner.link},
+   * since a button with no destination does nothing.
+   */
+  ctaLabel?: string;
   position: BannerPosition;
-  sortOrder: number;
   startsAt: string | null;
   endsAt: string | null;
   isActive: boolean;

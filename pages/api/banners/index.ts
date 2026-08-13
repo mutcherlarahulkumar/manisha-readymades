@@ -9,7 +9,7 @@
 import { createHandler, sendSuccess } from '@/lib/api/handler';
 import { validateBody } from '@/lib/api/validate';
 import { getSession, requireSession } from '@/lib/auth';
-import { createBanner, listBanners } from '@/services/marketing.service';
+import { listBanners, saveBanner } from '@/services/marketing.service';
 import { bannerSchema } from '@/validation/marketing.schema';
 
 export default createHandler({
@@ -21,6 +21,8 @@ export default createHandler({
   POST: async (req, res) => {
     requireSession(req);
     const values = await validateBody(bannerSchema, req.body);
-    sendSuccess(res, await createBanner(values), 201);
+    // Upsert: each position is a single slot, so posting the same position
+    // again replaces it rather than creating a rival banner.
+    sendSuccess(res, await saveBanner(values), 200);
   },
 });

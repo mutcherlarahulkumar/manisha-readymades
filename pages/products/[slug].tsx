@@ -21,6 +21,7 @@ import NextLink from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 
 import { PageContainer, Section } from '@/components/common/PageContainer';
+import { ShareButton } from '@/components/common/ShareButton';
 import { StoreLayout } from '@/components/layout/StoreLayout';
 import { Reveal } from '@/components/motion/Reveal';
 import { ProductGrid } from '@/components/product/ProductCard';
@@ -226,9 +227,22 @@ export default function ProductDetailPage({
                 </Typography>
               )}
 
-              <Typography variant="h2" component="h1" sx={{ mt: 0.5 }}>
-                {product.name}
-              </Typography>
+              {/* The share control sits with the title rather than at the foot
+                  of the page: sharing a product happens while looking at it. */}
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="flex-start"
+                justifyContent="space-between"
+                sx={{ mt: 0.5 }}
+              >
+                <Typography variant="h2" component="h1" sx={{ minWidth: 0 }}>
+                  {product.name}
+                </Typography>
+                <Box sx={{ flexShrink: 0, pt: 0.5 }}>
+                  <ShareButton title={product.name} url={`/products/${product.slug}`} compact />
+                </Box>
+              </Stack>
 
               <Stack
                 direction="row"

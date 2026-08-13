@@ -78,7 +78,10 @@ export function ProductCard({ product }: ProductCardProps): JSX.Element {
         <Box
           sx={{
             position: 'relative',
-            aspectRatio: '3 / 4',
+            // 4:5 rather than 3:4. Garment photography still reads clearly at
+            // this ratio, and the shorter card puts appreciably more of the
+            // grid above the fold.
+            aspectRatio: '4 / 5',
             bgcolor: SURFACE.subtle,
             overflow: 'hidden',
           }}

@@ -67,7 +67,16 @@ export type DiscountFormValues = yup.InferType<typeof discountSchema>;
 export const bannerSchema = yup.object({
   title: requiredText('Title', 80, 3),
   subtitle: optionalText('Subtitle', 160),
-  image: imageAssetSchema.required('Banner image is required'),
+  // Required for the hero, which is a picture; the announcement bar is text and
+  // never carries one.
+  image: imageAssetSchema
+    .nullable()
+    .default(null)
+    .when('position', {
+      is: 'hero',
+      then: (schema) => schema.required('The hero needs an image'),
+      otherwise: (schema) => schema.strip(),
+    }),
   link: yup
     .string()
     .trim()
@@ -77,9 +86,26 @@ export const bannerSchema = yup.object({
       'is-valid-link',
       'Enter a full URL or a path starting with /',
       (value) => value == null || value.startsWith('/') || /^https?:\/\//.test(value),
+    )
+    .test(
+      'needs-label',
+      'Give the button a label',
+      (value, ctx) => !value || ctx.parent.position !== 'top' || Boolean(ctx.parent.ctaLabel),
+    ),
+  // A button label and its destination only make sense together: a label with
+  // no link renders a control that goes nowhere, and a link with no label
+  // renders nothing at all.
+  ctaLabel: yup
+    .string()
+    .trim()
+    .transform((value: string) => (value === '' ? undefined : value))
+    .max(24, 'Keep the button label short')
+    .test(
+      'needs-link',
+      'A button needs a destination',
+      (value, ctx) => !value || Boolean(ctx.parent.link),
     ),
   position: yup.string().oneOf(BANNER_POSITIONS).default('top').required(),
-  sortOrder: yup.number().integer().min(0).default(0).required(),
   startsAt: yup.date().nullable().default(null),
   endsAt: yup
     .date()

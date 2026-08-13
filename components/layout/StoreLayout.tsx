@@ -4,6 +4,7 @@
  * @module components/layout/StoreLayout
  */
 import CloseIcon from '@mui/icons-material/Close';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import MenuIcon from '@mui/icons-material/Menu';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
@@ -143,7 +144,10 @@ interface StoreLayoutProps {
   title?: string;
   /** Meta description for search engines. */
   description?: string;
-  /** Banners with position `top`, rendered as the announcement strip. */
+  /**
+   * Banners with position `top`. There is only ever one, but the storefront
+   * pages pass what the service returned, so the first is taken here.
+   */
   topBanners?: Banner[];
   /**
    * Categories for the strip beneath the header.
@@ -171,6 +175,7 @@ export function StoreLayout({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const router = useRouter();
   const isScrolled = useScrolled(8);
+  const announcement = topBanners[0];
   const prefersReducedMotion = useReducedMotion();
   const pageTitle = title ? `${title} · Manisha Readymades` : 'Manisha Readymades · Wholesale Garment Supplier';
 
@@ -182,18 +187,18 @@ export function StoreLayout({
       </Head>
 
       {/*
-        Announcement strip: admin-controlled, hidden entirely when empty.
+        The announcement bar.
 
-        Deliberately not sticky. The strip is an announcement, not a control,
-        and pinning it would cost a slice of every screen for the life of the
-        session. It carries the accent amber rather than the navy used by the
-        header and footer, so a promotion reads as a promotion instead of as
-        another band of site chrome.
+        One line of admin-controlled text, optionally with a button. Deliberately
+        not sticky: it is an announcement, not a control, and pinning it would
+        cost a slice of every screen for the life of the session. It carries the
+        accent amber rather than the navy used by the header and footer, so a
+        promotion reads as a promotion instead of as another band of site chrome.
       */}
-      {topBanners.length > 0 && (
+      {announcement && (
         <Box
           role="region"
-          aria-label="Announcements"
+          aria-label="Announcement"
           sx={{
             bgcolor: 'secondary.main',
             color: 'secondary.contrastText',
@@ -207,41 +212,48 @@ export function StoreLayout({
               direction="row"
               alignItems="center"
               justifyContent="center"
-              sx={{
-                gap: { xs: 1, sm: 1.5 },
-                // Several announcements scroll rather than wrap: a wrapping
-                // strip changes the header's height depending on how much the
-                // admin has written, which shifts the whole page down.
-                overflowX: 'auto',
-                scrollbarWidth: 'none',
-                '&::-webkit-scrollbar': { display: 'none' },
-                py: 0.75,
-              }}
+              sx={{ gap: { xs: 1, sm: 1.5 }, py: 0.75, flexWrap: 'wrap' }}
             >
               <LocalOfferIcon sx={{ fontSize: 14, flexShrink: 0, opacity: 0.9 }} />
-              {topBanners.map((banner, index) => (
-                <Stack
-                  key={banner._id}
-                  direction="row"
-                  alignItems="center"
-                  sx={{ gap: { xs: 1, sm: 1.5 }, flexShrink: 0 }}
+              <Typography
+                variant="caption"
+                component="p"
+                sx={{ fontWeight: 600, letterSpacing: '0.02em' }}
+              >
+                {announcement.title}
+              </Typography>
+
+              {/* The button appears only when the admin gave it both a label and
+                  a destination; either alone is rejected at validation. */}
+              {announcement.ctaLabel && announcement.link && (
+                <Box
+                  component={announcement.link.startsWith('/') ? NextLink : 'a'}
+                  href={announcement.link}
+                  {...(announcement.link.startsWith('/')
+                    ? {}
+                    : { target: '_blank', rel: 'noopener noreferrer' })}
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.25,
+                    px: 1.25,
+                    py: 0.25,
+                    borderRadius: `${RADIUS.pill}px`,
+                    border: '1px solid currentColor',
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.02em',
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    whiteSpace: 'nowrap',
+                    transition: 'background-color 160ms',
+                    '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                  }}
                 >
-                  {index > 0 && (
-                    <Box
-                      component="span"
-                      aria-hidden
-                      sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: 'currentColor', opacity: 0.6 }}
-                    />
-                  )}
-                  <Typography
-                    variant="caption"
-                    component="p"
-                    sx={{ fontWeight: 600, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}
-                  >
-                    {banner.title}
-                  </Typography>
-                </Stack>
-              ))}
+                  {announcement.ctaLabel}
+                  <ChevronRightIcon sx={{ fontSize: 14 }} />
+                </Box>
+              )}
             </Stack>
           </Container>
         </Box>

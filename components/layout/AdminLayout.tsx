@@ -40,6 +40,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { LoadingState } from '@/components/common/StateViews';
+import { BrandLogo } from '@/components/layout/BrandLogo';
 import { useAuth } from '@/hooks/useAuth';
 import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
 import type { AdminRole } from '@/types/models';
@@ -131,17 +132,26 @@ export function AdminLayout({ children, title, subtitle, action }: AdminLayoutPr
 
   const navigation = (
     <Box sx={{ py: 2, px: 1.5, height: '100%', bgcolor: 'background.paper' }}>
-      <Box sx={{ px: 1, pb: 2 }}>
+      <Box
+        component={NextLink}
+        href="/admin"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.25,
+          px: 1,
+          pb: 2,
+          textDecoration: 'none',
+        }}
+      >
+        <BrandLogo size={30} />
         <Typography
-          component={NextLink}
-          href="/admin"
+          component="span"
           sx={{
-            display: 'block',
             color: 'primary.main',
             fontWeight: 800,
             fontSize: '1.0625rem',
             letterSpacing: '-0.02em',
-            textDecoration: 'none',
           }}
         >
           Manisha Admin
@@ -298,7 +308,32 @@ export function AdminLayout({ children, title, subtitle, action }: AdminLayoutPr
             </Box>
 
             <Stack direction="row" spacing={INNER_SPACING} alignItems="center">
-              {action}
+              {/*
+                Page actions are scaled down on phones. A toolbar that already
+                carries the menu button, the page title and the account block has
+                no room for a full-height button, and at 375px the title was
+                being squeezed to a couple of words.
+              */}
+              {action && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    '& .MuiButton-root': {
+                      minHeight: { xs: 34, md: 44 },
+                      paddingInline: { xs: 1.25, md: 3 },
+                      fontSize: { xs: '0.8125rem', md: '0.875rem' },
+                      whiteSpace: 'nowrap',
+                    },
+                    '& .MuiButton-startIcon': {
+                      marginRight: { xs: 0.5, md: 1 },
+                      '& > *:nth-of-type(1)': { fontSize: { xs: 16, md: 20 } },
+                    },
+                  }}
+                >
+                  {action}
+                </Box>
+              )}
               <Box sx={{ display: { xs: 'none', sm: 'block' }, textAlign: 'right' }}>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {admin.name}

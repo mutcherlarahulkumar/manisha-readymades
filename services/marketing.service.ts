@@ -106,7 +106,7 @@ export async function listBanners(options: { visibleOnly?: boolean } = {}): Prom
     ];
   }
 
-  const docs = await Banner.find(filter).sort({ sortOrder: 1, createdAt: -1 }).lean();
+  const docs = await Banner.find(filter).sort({ createdAt: -1 }).lean();
   return serialize<BannerJson[]>(docs);
 }
 
@@ -124,14 +124,30 @@ export async function getBanner(id: string): Promise<BannerJson> {
 }
 
 /**
- * Creates a banner.
+ * Saves the banner for a slot, replacing whatever occupied it.
  *
- * @param values - Validated form values.
- * @returns The created banner.
+ * @param values - Validated form values, including the target position.
+ * @returns The stored banner.
+ *
+ * @remarks
+ * There is exactly one announcement bar and one hero, so "create" and "update"
+ * are the same operation: write the slot. Modelling it as an upsert removes the
+ * whole class of confusion the old list produced, where several banners could
+ * claim the same position and only the first happened to render.
  */
-export async function createBanner(values: BannerFormValues): Promise<BannerJson> {
-  const created = await Banner.create(values);
-  return serialize<BannerJson>(created.toObject());
+export async function saveBanner(values: BannerFormValues): Promise<BannerJson> {
+  const existing = await Banner.findOne({ position: values.position });
+
+  if (!existing) {
+    const created = await Banner.create(values);
+    return serialize<BannerJson>(created.toObject());
+  }
+
+  // `set` then `save` rather than `findOneAndUpdate`, so the pre-validate hook
+  // that enforces the per-slot rules actually runs.
+  existing.set(values);
+  await existing.save();
+  return serialize<BannerJson>(existing.toObject());
 }
 
 /**
@@ -161,7 +177,8 @@ export async function updateBanner(id: string, values: BannerFormValues): Promis
 export async function deleteBanner(id: string): Promise<{ publicIds: string[] }> {
   const doc = await Banner.findByIdAndDelete(id).lean<BannerDocument | null>();
   if (!doc) throw ApiError.notFound('Banner');
-  return { publicIds: [doc.image.publicId] };
+  // Only the hero holds an image, so there may be nothing to clean up.
+  return { publicIds: doc.image ? [doc.image.publicId] : [] };
 }
 
 /* ---------------------------------------------------------------- reviews */
