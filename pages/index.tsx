@@ -75,13 +75,12 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
   const prefersReducedMotion = useReducedMotion();
   const topBanners = banners.filter((banner) => banner.position === 'top');
   const heroBanner = banners.find((banner) => banner.position === 'hero');
-  const topLevelCategories = categories.filter((category) => category.parent === null);
 
   /** Entrance for the hero's own children, sequenced behind the panel itself. */
   const heroStagger = prefersReducedMotion ? undefined : staggerContainer(0.08, 0.1);
 
   return (
-    <StoreLayout topBanners={topBanners}>
+    <StoreLayout topBanners={topBanners} categories={categories}>
       {/*
         Hero.
 
@@ -92,7 +91,7 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
         headline a left margin to align against and stops the section looking
         like a generic centred banner.
       */}
-      <Box sx={{ px: OUTER_SPACING, pt: { xs: 2, md: 3 } }}>
+      <Box sx={{ px: OUTER_SPACING, pt: { xs: 1.5, md: 2.5 } }}>
         <Box
           sx={{
             maxWidth: SHELL_MAX_WIDTH,
@@ -107,17 +106,20 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: heroBanner ? '1.05fr 0.95fr' : '1fr' },
+              // The type column is the wider of the two. A near-even split
+              // makes the headline wrap early while the photograph has more
+              // room than it needs.
+              gridTemplateColumns: { xs: '1fr', md: heroBanner ? '1.15fr 0.85fr' : '1fr' },
               alignItems: 'stretch',
-              minHeight: { xs: 'auto', md: 480 },
+              minHeight: { xs: 'auto', md: 400 },
             }}
           >
             <Box
               sx={{
                 position: 'relative',
                 zIndex: 1,
-                px: { xs: 3, sm: 5, md: 7 },
-                py: { xs: 6, sm: 7, md: 9 },
+                px: { xs: 2.5, sm: 4, md: 6 },
+                py: { xs: 4.5, sm: 5, md: 6 },
                 display: 'flex',
                 alignItems: 'center',
                 textAlign: { xs: 'center', md: 'left' },
@@ -146,7 +148,10 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
                   <Typography
                     variant="h1"
                     component="h1"
-                    sx={{ maxWidth: 620, mx: { xs: 'auto', md: 0 } }}
+                    // Capped in characters rather than pixels, so the headline
+                    // breaks into balanced lines whatever the admin types into
+                    // the banner title.
+                    sx={{ maxWidth: '14ch', mx: { xs: 'auto', md: 0 } }}
                   >
                     {heroBanner?.title ?? 'Wholesale Garment Supplier'}
                   </Typography>
@@ -158,12 +163,12 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
                     component="p"
                     sx={{
                       fontWeight: 400,
-                      fontSize: { xs: '1rem', md: '1.125rem' },
-                      opacity: 0.82,
+                      fontSize: { xs: '0.9375rem', md: '1.0625rem' },
+                      opacity: 0.8,
                       lineHeight: 1.6,
-                      maxWidth: 520,
+                      maxWidth: '46ch',
                       mx: { xs: 'auto', md: 0 },
-                      mt: { xs: 2, md: 2.5 },
+                      mt: { xs: 1.5, md: 2 },
                     }}
                   >
                     {heroBanner?.subtitle ?? 'Premium clothing at wholesale prices.'}
@@ -175,7 +180,7 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
                     direction={{ xs: 'column', sm: 'row' }}
                     spacing={INNER_SPACING}
                     justifyContent={{ xs: 'center', md: 'flex-start' }}
-                    sx={{ mt: { xs: 4, md: 5 } }}
+                    sx={{ mt: { xs: 3, md: 3.5 } }}
                   >
                     <Button
                       component={NextLink}
@@ -207,7 +212,7 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
               <Box
                 sx={{
                   position: 'relative',
-                  minHeight: { xs: 260, sm: 340, md: 'auto' },
+                  minHeight: { xs: 200, sm: 280, md: 'auto' },
                   order: { xs: -1, md: 0 },
                 }}
               >
@@ -238,9 +243,24 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
                   sx={{
                     position: 'absolute',
                     inset: 0,
+                    // Multi-stop, and eased rather than linear. A two-stop
+                    // gradient over a photograph shows a visible band where the
+                    // ramp begins; the extra stops spread that transition out
+                    // until the image simply dissolves into the panel.
                     background: {
-                      xs: `linear-gradient(to bottom, rgba(15,27,61,0.15) 0%, rgba(15,27,61,0.55) 60%, ${SURFACE.inverse} 100%)`,
-                      md: `linear-gradient(to right, ${SURFACE.inverse} 0%, rgba(15,27,61,0.55) 32%, rgba(15,27,61,0.05) 100%)`,
+                      xs: `linear-gradient(to bottom,
+                        rgba(15,27,61,0.10) 0%,
+                        rgba(15,27,61,0.25) 35%,
+                        rgba(15,27,61,0.65) 70%,
+                        rgba(15,27,61,0.92) 88%,
+                        ${SURFACE.inverse} 100%)`,
+                      md: `linear-gradient(to right,
+                        ${SURFACE.inverse} 0%,
+                        rgba(15,27,61,0.94) 12%,
+                        rgba(15,27,61,0.70) 30%,
+                        rgba(15,27,61,0.34) 52%,
+                        rgba(15,27,61,0.10) 74%,
+                        rgba(15,27,61,0.02) 100%)`,
                     },
                   }}
                 />
@@ -251,117 +271,6 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
       </Box>
 
       <PageContainer>
-        <Section title="Categories" subtitle="Shop by what your customers ask for most.">
-          {topLevelCategories.length === 0 ? (
-            <EmptyState
-              title="Categories are being set up"
-              description="Product categories will appear here shortly."
-            />
-          ) : (
-            <RevealGroup
-              sx={{
-                display: 'grid',
-                gap: { xs: 1.5, md: 3 },
-                gridTemplateColumns: {
-                  xs: 'repeat(2, minmax(0, 1fr))',
-                  md: 'repeat(3, minmax(0, 1fr))',
-                },
-              }}
-            >
-              {topLevelCategories.map((category) => (
-                <RevealItem key={category._id} sx={{ height: '100%' }}>
-                  <Box
-                    component={NextLink}
-                    href={`/products?categories=${category.slug}`}
-                    sx={{
-                      display: 'block',
-                      height: '100%',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      borderRadius: `${RADIUS.md}px`,
-                      textDecoration: 'none',
-                      bgcolor: SURFACE.subtle,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      transition: 'transform 260ms cubic-bezier(0.22,1,0.36,1), box-shadow 260ms',
-                      '&:hover': { transform: 'translateY(-4px)', boxShadow: SHADOW.md },
-                      '&:hover .category-tile__image': { transform: 'scale(1.06)' },
-                      '@media (hover: none)': { '&:hover': { transform: 'none', boxShadow: 'none' } },
-                      '@media (prefers-reduced-motion: reduce)': {
-                        '&:hover': { transform: 'none' },
-                        '&:hover .category-tile__image': { transform: 'none' },
-                      },
-                    }}
-                  >
-                    {/* A fixed ratio whether or not the category has an image,
-                        so a half-populated catalogue does not produce a grid of
-                        mismatched tile heights. */}
-                    <Box sx={{ position: 'relative', aspectRatio: '4 / 3', overflow: 'hidden' }}>
-                      {category.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- Cloudinary asset.
-                        <img
-                          className="category-tile__image"
-                          src={category.image.url}
-                          alt={category.image.alt ?? category.name}
-                          loading="lazy"
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                            transition: 'transform 600ms cubic-bezier(0.22,1,0.36,1)',
-                          }}
-                        />
-                      ) : (
-                        <Box sx={{ width: '100%', height: '100%', bgcolor: SURFACE.subtle }} />
-                      )}
-
-                      {/* The label sits on the image behind a bottom-weighted
-                          scrim, which keeps the text legible over any
-                          photograph the admin uploads. */}
-                      <Box
-                        aria-hidden
-                        sx={{
-                          position: 'absolute',
-                          inset: 0,
-                          background:
-                            'linear-gradient(to top, rgba(15,27,61,0.88) 0%, rgba(15,27,61,0.35) 45%, rgba(15,27,61,0) 75%)',
-                        }}
-                      />
-
-                      <Box sx={{ position: 'absolute', left: 0, right: 0, bottom: 0, p: 2 }}>
-                        <Stack direction="row" alignItems="center" spacing={0.75}>
-                          <Typography
-                            variant="h6"
-                            component="h3"
-                            sx={{ color: 'common.white', fontWeight: 700 }}
-                          >
-                            {category.name}
-                          </Typography>
-                          <ArrowForwardIcon sx={{ fontSize: 16, color: 'secondary.light' }} />
-                        </Stack>
-                        {category.description && (
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: 'common.white',
-                              opacity: 0.8,
-                              display: '-webkit-box',
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
-                            }}
-                          >
-                            {category.description}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                  </Box>
-                </RevealItem>
-              ))}
-            </RevealGroup>
-          )}
-        </Section>
 
         <Section
           title="Featured Products"

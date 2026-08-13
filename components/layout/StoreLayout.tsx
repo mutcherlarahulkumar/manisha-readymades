@@ -4,6 +4,7 @@
  * @module components/layout/StoreLayout
  */
 import CloseIcon from '@mui/icons-material/Close';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import MenuIcon from '@mui/icons-material/Menu';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import AppBar from '@mui/material/AppBar';
@@ -23,13 +24,22 @@ import NextLink from 'next/link';
 import { useRouter } from 'next/router';
 import { useState, type ReactNode } from 'react';
 
+import { BrandLogo } from '@/components/layout/BrandLogo';
+import { CategoryStrip } from '@/components/layout/CategoryStrip';
 import { HeaderSearch } from '@/components/layout/HeaderSearch';
 import { useScrolled } from '@/hooks/useScrolled';
 import { publicEnv } from '@/lib/env';
 import { DURATION, EASE, staggerContainer } from '@/theme/motion';
 import { OUTER_SPACING } from '@/theme/spacing';
-import { HEADER_HEIGHT, RADIUS, SHADOW, SHELL_MAX_WIDTH, SURFACE } from '@/theme/tokens';
-import type { Banner } from '@/types/models';
+import {
+  ANNOUNCEMENT_HEIGHT,
+  HEADER_HEIGHT,
+  RADIUS,
+  SHADOW,
+  SHELL_MAX_WIDTH,
+  SURFACE,
+} from '@/theme/tokens';
+import type { Banner, CategoryWithParent } from '@/types/models';
 import { buildGeneralEnquiryLink } from '@/utils/whatsapp';
 
 /** Primary storefront navigation. */
@@ -120,6 +130,14 @@ interface StoreLayoutProps {
   description?: string;
   /** Banners with position `top`, rendered as the announcement strip. */
   topBanners?: Banner[];
+  /**
+   * Categories for the strip beneath the header.
+   *
+   * Supplied by the pages that already load the taxonomy for their own use —
+   * the home page and the catalogue. The two static marketing pages omit it
+   * rather than acquiring a server round-trip purely to draw navigation.
+   */
+  categories?: readonly CategoryWithParent[];
 }
 
 /**
@@ -133,6 +151,7 @@ export function StoreLayout({
   title,
   description = 'Wholesale readymade garments — men’s, women’s and kids’ clothing at wholesale prices.',
   topBanners = [],
+  categories = [],
 }: StoreLayoutProps): JSX.Element {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const router = useRouter();
@@ -147,39 +166,68 @@ export function StoreLayout({
         <meta name="description" content={description} />
       </Head>
 
-      {/* Announcement strip: admin-controlled, hidden entirely when empty. */}
+      {/*
+        Announcement strip: admin-controlled, hidden entirely when empty.
+
+        Deliberately not sticky. The strip is an announcement, not a control,
+        and pinning it would cost a slice of every screen for the life of the
+        session. It carries the accent amber rather than the navy used by the
+        header and footer, so a promotion reads as a promotion instead of as
+        another band of site chrome.
+      */}
       {topBanners.length > 0 && (
         <Box
+          role="region"
+          aria-label="Announcements"
           sx={{
-            bgcolor: SURFACE.inverse,
-            color: 'common.white',
-            py: 0.75,
-            // Deliberately not sticky. The strip is an announcement, not a
-            // control, and pinning it would cost 36px of every screen for the
-            // life of the session.
+            bgcolor: 'secondary.main',
+            color: 'secondary.contrastText',
+            minHeight: ANNOUNCEMENT_HEIGHT,
+            display: 'flex',
+            alignItems: 'center',
           }}
         >
           <Container sx={{ maxWidth: `${SHELL_MAX_WIDTH}px !important` }}>
-            <Typography
-              variant="caption"
-              align="center"
-              component="p"
-              sx={{ fontWeight: 600, letterSpacing: '0.04em' }}
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="center"
+              sx={{
+                gap: { xs: 1, sm: 1.5 },
+                // Several announcements scroll rather than wrap: a wrapping
+                // strip changes the header's height depending on how much the
+                // admin has written, which shifts the whole page down.
+                overflowX: 'auto',
+                scrollbarWidth: 'none',
+                '&::-webkit-scrollbar': { display: 'none' },
+                py: 0.75,
+              }}
             >
+              <LocalOfferIcon sx={{ fontSize: 14, flexShrink: 0, opacity: 0.9 }} />
               {topBanners.map((banner, index) => (
-                <Box component="span" key={banner._id}>
-                  {/* The separator alone is tinted with the accent colour, so a
-                      multi-banner strip stays scannable without the titles
-                      themselves changing colour. */}
+                <Stack
+                  key={banner._id}
+                  direction="row"
+                  alignItems="center"
+                  sx={{ gap: { xs: 1, sm: 1.5 }, flexShrink: 0 }}
+                >
                   {index > 0 && (
-                    <Box component="span" aria-hidden sx={{ color: 'secondary.light', mx: 1.5 }}>
-                      •
-                    </Box>
+                    <Box
+                      component="span"
+                      aria-hidden
+                      sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: 'currentColor', opacity: 0.6 }}
+                    />
                   )}
-                  {banner.title}
-                </Box>
+                  <Typography
+                    variant="caption"
+                    component="p"
+                    sx={{ fontWeight: 600, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}
+                  >
+                    {banner.title}
+                  </Typography>
+                </Stack>
               ))}
-            </Typography>
+            </Stack>
           </Container>
         </Box>
       )}
@@ -215,38 +263,69 @@ export function StoreLayout({
               transition: 'min-height 280ms cubic-bezier(0.22, 1, 0.36, 1)',
             }}
           >
+            {/*
+              The brand lockup. On desktop the mark sits alongside the
+              wordmark; on phones the mark stands alone, because the full name
+              at a legible size would leave no room for the menu and would push
+              the search field off its own row. The link keeps the brand name as
+              its accessible label either way, so nothing is lost when the words
+              are not drawn.
+            */}
             <Box
               component={NextLink}
               href="/"
               aria-label="Manisha Readymades — home"
-              sx={{ textDecoration: 'none', flexShrink: 0, mr: 'auto' }}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.25,
+                textDecoration: 'none',
+                flexShrink: 0,
+                mr: 'auto',
+                '&:hover .brand-lockup__mark': { transform: 'rotate(-4deg) scale(1.04)' },
+                '@media (prefers-reduced-motion: reduce)': {
+                  '&:hover .brand-lockup__mark': { transform: 'none' },
+                },
+              }}
             >
-              <Typography
-                component="span"
+              <Box
+                className="brand-lockup__mark"
                 sx={{
-                  display: 'block',
-                  color: 'primary.main',
-                  fontWeight: 800,
-                  letterSpacing: '-0.03em',
-                  lineHeight: 1.1,
-                  fontSize: { xs: '1.0625rem', sm: '1.1875rem', md: '1.3125rem' },
+                  display: 'flex',
+                  transition: 'transform 260ms cubic-bezier(0.22, 1, 0.36, 1)',
                 }}
               >
-                Manisha Readymades
-              </Typography>
-              <Typography
-                component="span"
-                variant="overline"
-                sx={{
-                  display: { xs: 'none', sm: 'block' },
-                  color: 'text.secondary',
-                  fontSize: '0.5625rem',
-                  letterSpacing: '0.18em',
-                  lineHeight: 1.4,
-                }}
-              >
-                Wholesale Garments
-              </Typography>
+                <BrandLogo size={isScrolled ? 32 : 36} />
+              </Box>
+
+              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                <Typography
+                  component="span"
+                  sx={{
+                    display: 'block',
+                    color: 'primary.main',
+                    fontWeight: 800,
+                    letterSpacing: '-0.03em',
+                    lineHeight: 1.1,
+                    fontSize: '1.25rem',
+                  }}
+                >
+                  Manisha Readymades
+                </Typography>
+                <Typography
+                  component="span"
+                  variant="overline"
+                  sx={{
+                    display: 'block',
+                    color: 'text.secondary',
+                    fontSize: '0.5625rem',
+                    letterSpacing: '0.18em',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  Wholesale Garments
+                </Typography>
+              </Box>
             </Box>
 
             <Box sx={{ display: { xs: 'none', md: 'block' } }}>
@@ -299,6 +378,10 @@ export function StoreLayout({
             <HeaderSearch fullWidth />
           </Box>
         </Container>
+
+        {/* Inside the AppBar, so the categories stay reachable for the whole
+            scroll rather than only at the top of the page. */}
+        <CategoryStrip categories={categories} />
       </AppBar>
 
       <Drawer
@@ -312,9 +395,27 @@ export function StoreLayout({
           role="presentation"
         >
           <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
-            <Typography variant="overline" color="text.secondary">
-              Menu
-            </Typography>
+            <Stack direction="row" alignItems="center" spacing={1.25}>
+              <BrandLogo size={32} />
+              <Box>
+                <Typography
+                  component="span"
+                  sx={{
+                    display: 'block',
+                    color: 'primary.main',
+                    fontWeight: 800,
+                    fontSize: '0.9375rem',
+                    letterSpacing: '-0.02em',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Manisha Readymades
+                </Typography>
+                <Typography variant="overline" color="text.secondary" sx={{ fontSize: '0.5rem' }}>
+                  Wholesale Garments
+                </Typography>
+              </Box>
+            </Stack>
             <IconButton onClick={() => setIsDrawerOpen(false)} aria-label="Close navigation menu" edge="end">
               <CloseIcon />
             </IconButton>
@@ -418,9 +519,12 @@ export function StoreLayout({
             }}
           >
             <Box sx={{ gridColumn: { sm: '1 / -1', md: 'auto' } }}>
-              <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
-                Manisha Readymades
-              </Typography>
+              <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 0.5 }}>
+                <BrandLogo size={34} inverse />
+                <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+                  Manisha Readymades
+                </Typography>
+              </Stack>
               <Typography variant="body2" sx={{ opacity: 0.72, mt: 1.5, maxWidth: 340, lineHeight: 1.7 }}>
                 Wholesale garment supplier since 2020. Bulk orders, custom printing and fast
                 WhatsApp support.

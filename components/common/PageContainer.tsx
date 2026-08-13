@@ -41,7 +41,11 @@ export function PageContainer({ children, disableTopPadding = false }: PageConta
       component="main"
       sx={{
         maxWidth: `${CONTENT_MAX_WIDTH}px !important`,
-        pt: disableTopPadding ? 0 : SECTION_SPACING,
+        // The top gap is smaller than the gap between sections: content
+        // following a header or a hero is already visually separated by the
+        // change of surface, so it does not need the full section rhythm as
+        // well.
+        pt: disableTopPadding ? 0 : { xs: 3, md: 5 },
         pb: SECTION_SPACING,
       }}
     >

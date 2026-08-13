@@ -39,28 +39,33 @@ export const OUTER_SPACING: ResponsiveStyleValue<number> = { xs: 2, md: 3 };
 export const INNER_SPACING: ResponsiveStyleValue<number> = { xs: 1, md: 2 };
 
 /**
- * Vertical rhythm between page sections: 48px on mobile, 80px from `md` up.
+ * Vertical rhythm between page sections: 32px on mobile, 56px from `md` up.
  *
  * @remarks
  * A multiple of the outer step, so it stays inside the same scale. The gap
  * between sections is the main thing that makes a page feel composed rather
  * than stacked — when it is close to the gap *within* a section, the eye cannot
- * tell where one idea ends and the next begins. Section spacing is therefore
- * kept several times larger than {@link OUTER_SPACING}, and generously so on
- * desktop where there is room for it.
+ * tell where one idea ends and the next begins.
+ *
+ * It is deliberately not larger than this. A wholesale catalogue is a working
+ * tool: buyers scan it for stock and prices, and every extra hundred pixels
+ * between sections is a scroll they make on every visit. The generous
+ * whitespace that suits a single-product landing page reads as emptiness here,
+ * so the rhythm is set to the smallest value that still separates the sections
+ * cleanly.
  */
-export const SECTION_SPACING: ResponsiveStyleValue<number> = { xs: 6, md: 10 };
+export const SECTION_SPACING: ResponsiveStyleValue<number> = { xs: 4, md: 7 };
 
 /**
- * The gap between a section's heading block and its content: 24px on mobile,
- * 32px from `md` up.
+ * The gap between a section's heading block and its content: 16px on mobile,
+ * 24px from `md` up.
  *
  * @remarks
- * Sits deliberately between {@link OUTER_SPACING} and {@link SECTION_SPACING}.
+ * Sits deliberately between {@link INNER_SPACING} and {@link SECTION_SPACING}.
  * A heading needs more air beneath it than the items it introduces have between
  * them, or it reads as the first item in the list rather than as its title.
  */
-export const HEADING_SPACING: ResponsiveStyleValue<number> = { xs: 3, md: 4 };
+export const HEADING_SPACING: ResponsiveStyleValue<number> = { xs: 2, md: 3 };
 
 /** Maximum content width, keeping line lengths readable on wide screens. */
 export const CONTENT_MAX_WIDTH = 1280;

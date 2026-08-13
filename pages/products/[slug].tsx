@@ -31,9 +31,10 @@ import { api } from '@/lib/http';
 import { connectToDatabase } from '@/lib/mongodb';
 import { getProduct, listProducts } from '@/services/product.service';
 import { listApprovedReviews } from '@/services/marketing.service';
+import { listCategories } from '@/services/taxonomy.service';
 import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
-import { HEADER_HEIGHT, RADIUS, SHADOW, SURFACE } from '@/theme/tokens';
-import type { ProductListItem, Review } from '@/types/models';
+import { RADIUS, SHADOW, SURFACE, stickyContentTop } from '@/theme/tokens';
+import type { CategoryWithParent, ProductListItem, Review } from '@/types/models';
 import { formatCurrency } from '@/utils/format';
 import { productQuerySchema } from '@/validation/product.schema';
 
@@ -45,6 +46,8 @@ interface ProductDetailPageProps {
   product: ProductListItem;
   initialReviews: Review[];
   related: ProductListItem[];
+  /** Feeds the category strip beneath the header. */
+  categories: CategoryWithParent[];
 }
 
 /**
@@ -57,6 +60,7 @@ export default function ProductDetailPage({
   product,
   initialReviews,
   related,
+  categories,
 }: ProductDetailPageProps): JSX.Element {
   const [isEnquiryOpen, setIsEnquiryOpen] = useState(false);
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
@@ -86,7 +90,11 @@ export default function ProductDetailPage({
   const currentImage = product.images[activeImage] ?? product.images[0];
 
   return (
-    <StoreLayout title={product.name} description={product.description ?? undefined}>
+    <StoreLayout
+      title={product.name}
+      description={product.description ?? undefined}
+      categories={categories}
+    >
       {/* The page reserves room for the fixed mobile enquiry bar so the last
           element on the page is never trapped underneath it. */}
       <Box sx={{ pb: { xs: `${MOBILE_CTA_HEIGHT}px`, md: 0 } }}>
@@ -133,7 +141,7 @@ export default function ProductDetailPage({
                 // The gallery stays in view while the specification list is
                 // read on desktop — the picture is the thing being judged.
                 position: { md: 'sticky' },
-                top: { md: HEADER_HEIGHT.scrolled + 24 },
+                top: { md: stickyContentTop(categories.length > 0) },
               }}
             >
               <Box
@@ -461,9 +469,10 @@ export const getServerSideProps: GetServerSideProps<ProductDetailPageProps> = as
       categories: product.category.slug,
       limit: 4,
     });
-    const [reviews, relatedResult] = await Promise.all([
+    const [reviews, relatedResult, categories] = await Promise.all([
       listApprovedReviews(product._id),
       listProducts(relatedQuery),
+      listCategories({ activeOnly: true }),
     ]);
 
     return {
@@ -471,6 +480,7 @@ export const getServerSideProps: GetServerSideProps<ProductDetailPageProps> = as
         product,
         initialReviews: reviews,
         related: relatedResult.items.filter((item) => item._id !== product._id).slice(0, 4),
+        categories,
       },
     };
   } catch {

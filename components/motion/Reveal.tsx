@@ -2,9 +2,8 @@
  * Scroll-triggered entrance animations.
  *
  * These components are the only sanctioned way to animate an element into view.
- * Pages compose them instead of writing their own `motion.div` variants, which
- * is what keeps every reveal on the site running at the same speed and the same
- * curve.
+ * Pages compose them instead of writing their own motion variants, which is what
+ * keeps every reveal on the site running at the same speed and the same curve.
  *
  * Each wrapper is a motion-enabled MUI `Box`, so it accepts `sx` and can be the
  * grid or flex container itself rather than an extra layout node wrapped around
@@ -19,8 +18,15 @@
  * @module components/motion/Reveal
  */
 import Box, { type BoxProps } from '@mui/material/Box';
-import { m, useReducedMotion, type MotionProps, type Variants } from 'framer-motion';
-import type { ComponentType, ElementType, ReactNode } from 'react';
+import { m, useInView, useReducedMotion, type MotionProps, type Variants } from 'framer-motion';
+import {
+  useRef,
+  type ElementType,
+  type ForwardRefExoticComponent,
+  type ReactNode,
+  type RefAttributes,
+  type RefObject,
+} from 'react';
 
 import { DURATION, EASE, VIEWPORT, fadeRise, staggerContainer } from '@/theme/motion';
 
@@ -28,19 +34,39 @@ import { DURATION, EASE, VIEWPORT, fadeRise, staggerContainer } from '@/theme/mo
  * An MUI `Box` that Framer Motion can drive.
  *
  * @remarks
- * Created once at module scope. Calling `motion.create` inside a component
- * would produce a new component type on every render, which remounts the whole
+ * Created once at module scope. Calling `m.create` inside a component would
+ * produce a new component type on every render, which remounts the whole
  * subtree and throws away its animation state.
  *
- * The cast restores `component`, which `motion.create` drops: `Box` is
- * polymorphic through MUI's `OverridableComponent`, a shape Framer's wrapper
- * types collapse to the default `div` props. The runtime behaviour is
- * unaffected — the prop is still forwarded to `Box` — so this only re-states
- * what the underlying component already accepts.
+ * The cast restores `component`, which `m.create` drops: `Box` is polymorphic
+ * through MUI's `OverridableComponent`, a shape Framer's wrapper types collapse
+ * to the default `div` props. The runtime behaviour is unaffected — the prop is
+ * still forwarded to `Box` — so this only re-states what the underlying
+ * component already accepts.
  */
-const MotionBox = m.create(Box) as ComponentType<
-  BoxProps & MotionProps & { component?: ElementType }
+const MotionBox = m.create(Box) as ForwardRefExoticComponent<
+  BoxProps & MotionProps & { component?: ElementType } & RefAttributes<HTMLElement>
 >;
+
+/**
+ * Reports whether an element has scrolled into view, once.
+ *
+ * @returns A ref to attach to the element, and its in-view state.
+ *
+ * @remarks
+ * Deliberately `useInView` driving an `animate` prop, rather than the more
+ * concise `whileInView`. Variant propagation from a parent down to its
+ * staggered children is reliable through `animate`; through `whileInView` it
+ * only resolved when the group happened to sit inside the first viewport, so
+ * any grid below the fold stayed at `opacity: 0` even after being scrolled to.
+ * That failure is invisible on a short page and total on a long one, which
+ * makes it worth designing out rather than watching for.
+ */
+function useReveal(): [RefObject<HTMLElement>, boolean] {
+  const ref = useRef<HTMLElement>(null);
+  const isInView = useInView(ref, VIEWPORT);
+  return [ref, isInView];
+}
 
 /** Props shared by every reveal wrapper. */
 interface RevealBaseProps {
@@ -85,14 +111,7 @@ export function Reveal({
   fadeOnly = false,
 }: RevealProps): JSX.Element {
   const prefersReducedMotion = useReducedMotion();
-
-  if (prefersReducedMotion) {
-    return (
-      <Box component={component} sx={sx} className={className}>
-        {children}
-      </Box>
-    );
-  }
+  const [ref, isInView] = useReveal();
 
   const variants: Variants = fadeOnly
     ? {
@@ -108,17 +127,24 @@ export function Reveal({
         },
       };
 
+  if (prefersReducedMotion) {
+    return (
+      <Box component={component} sx={sx} className={className}>
+        {children}
+      </Box>
+    );
+  }
+
   return (
     <MotionBox
+      ref={ref}
+      data-reveal
       component={component}
       sx={sx}
       className={className}
-      data-reveal
-
       variants={variants}
       initial="hidden"
-      whileInView="visible"
-      viewport={VIEWPORT}
+      animate={isInView ? 'visible' : 'hidden'}
     >
       {children}
     </MotionBox>
@@ -163,6 +189,7 @@ export function RevealGroup({
   delayChildren = 0,
 }: RevealGroupProps): JSX.Element {
   const prefersReducedMotion = useReducedMotion();
+  const [ref, isInView] = useReveal();
 
   if (prefersReducedMotion) {
     return (
@@ -174,15 +201,14 @@ export function RevealGroup({
 
   return (
     <MotionBox
+      ref={ref}
+      data-reveal
       component={component}
       sx={sx}
       className={className}
-      data-reveal
-
       variants={staggerContainer(stagger, delayChildren)}
       initial="hidden"
-      whileInView="visible"
-      viewport={VIEWPORT}
+      animate={isInView ? 'visible' : 'hidden'}
     >
       {children}
     </MotionBox>
@@ -250,6 +276,7 @@ export function ImageReveal({
   delay = 0,
 }: ImageRevealProps): JSX.Element {
   const prefersReducedMotion = useReducedMotion();
+  const [ref, isInView] = useReveal();
 
   if (prefersReducedMotion) {
     return (
@@ -261,21 +288,19 @@ export function ImageReveal({
 
   return (
     <MotionBox
+      ref={ref}
+      data-reveal
       component={component}
       className={className}
       sx={[{ overflow: 'hidden' }, ...(Array.isArray(sx) ? sx : [sx])]}
-      data-reveal
-
       initial={{ clipPath: 'inset(0 0 100% 0)' }}
-      whileInView={{ clipPath: 'inset(0 0 0% 0)' }}
-      viewport={VIEWPORT}
+      animate={isInView ? { clipPath: 'inset(0 0 0% 0)' } : undefined}
       transition={{ duration: DURATION.slow, ease: EASE.emphasised, delay }}
     >
       <m.div
         style={{ height: '100%' }}
         initial={{ scale: 1.08 }}
-        whileInView={{ scale: 1 }}
-        viewport={VIEWPORT}
+        animate={isInView ? { scale: 1 } : undefined}
         transition={{ duration: DURATION.slow + 0.2, ease: EASE.emphasised, delay }}
       >
         {children}

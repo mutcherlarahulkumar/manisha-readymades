@@ -72,11 +72,31 @@ export const HEADER_HEIGHT = {
  * Height of the announcement strip above the header.
  *
  * @remarks
- * The strip is admin-controlled and often absent, so anything positioning
- * itself against the header must account for it conditionally rather than
- * assuming a fixed total offset.
+ * The strip sits *outside* the sticky header and scrolls away with the page, so
+ * it deliberately does not contribute to {@link stickyContentTop}. It is
+ * exported for the strip's own layout only.
  */
 export const ANNOUNCEMENT_HEIGHT = 36;
+
+/** Height of the category navigation strip inside the sticky header. */
+export const CATEGORY_STRIP_HEIGHT = 37;
+
+/**
+ * The offset a `position: sticky` element needs to clear the header.
+ *
+ * @param hasCategoryStrip - Whether the category strip is being rendered, which
+ * it is only on pages that supply categories to the layout.
+ * @returns The `top` value in pixels, including a small breathing gap.
+ *
+ * @remarks
+ * Centralised because the header's height is assembled from several optional
+ * parts, and every sticky element on the site has to agree with it. The
+ * previous hard-coded guess drifted the moment the header changed, which is
+ * exactly the failure this function exists to prevent.
+ */
+export function stickyContentTop(hasCategoryStrip: boolean): number {
+  return HEADER_HEIGHT.scrolled + (hasCategoryStrip ? CATEGORY_STRIP_HEIGHT : 0) + 16;
+}
 
 /**
  * Neutral surface and line colours.

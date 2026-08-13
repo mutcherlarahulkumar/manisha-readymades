@@ -34,7 +34,7 @@ import { listBanners } from '@/services/marketing.service';
 import { listProducts } from '@/services/product.service';
 import { listBrands, listCategories } from '@/services/taxonomy.service';
 import { OUTER_SPACING } from '@/theme/spacing';
-import { ANNOUNCEMENT_HEIGHT, HEADER_HEIGHT, RADIUS } from '@/theme/tokens';
+import { RADIUS, stickyContentTop } from '@/theme/tokens';
 import type { PaginationMeta } from '@/types/api';
 import type { Banner, Brand, CategoryWithParent, ProductListItem } from '@/types/models';
 import { productQuerySchema } from '@/validation/product.schema';
@@ -197,7 +197,7 @@ export default function ProductsPage({
   );
 
   return (
-    <StoreLayout title="Products" topBanners={topBanners}>
+    <StoreLayout title="Products" topBanners={topBanners} categories={categories}>
       <PageContainer>
         <Section
           title="All Products"
@@ -215,11 +215,10 @@ export default function ProductsPage({
               sx={{
                 display: { xs: 'none', md: 'block' },
                 position: 'sticky',
-                // Offset by the actual condensed header height rather than a
-                // hard-coded guess, plus the announcement strip when one is
-                // showing — otherwise the panel slides under the header on
-                // exactly the pages that have a banner.
-                top: HEADER_HEIGHT.scrolled + (topBanners.length > 0 ? ANNOUNCEMENT_HEIGHT : 0) + 16,
+                // Derived from the header's own tokens rather than guessed. The
+                // announcement strip is not part of this: it scrolls away with
+                // the page instead of sticking.
+                top: stickyContentTop(categories.length > 0),
                 maxHeight: '80vh',
                 overflowY: 'auto',
                 // A long category tree must scroll inside the panel, never push
