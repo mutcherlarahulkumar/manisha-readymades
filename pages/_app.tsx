@@ -11,6 +11,7 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { ToastContainer } from 'react-toastify';
 
+import { RouteProgress } from '@/components/layout/RouteProgress';
 import { PageTransition } from '@/components/motion/PageTransition';
 import { AuthProvider } from '@/hooks/useAuth';
 import { createEmotionCache } from '@/lib/emotionCache';
@@ -52,6 +53,7 @@ export default function MyApp({
           full bundle cannot creep back in unnoticed. `domAnimation` covers
           variants, `whileInView` and hover/tap — everything this UI animates.
         */}
+        <RouteProgress />
         <LazyMotion features={domAnimation} strict>
           <AuthProvider>
             <PageTransition>

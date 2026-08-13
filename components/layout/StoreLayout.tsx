@@ -51,6 +51,21 @@ const NAV_LINKS = [
 ] as const;
 
 /**
+ * Footer navigation: the header's entries plus the two directory pages.
+ *
+ * @remarks
+ * Categories and Brands are deliberately not in the header. The category strip
+ * already covers browsing by category, and adding two more items to a
+ * four-item bar would cost more clarity than the directories are worth up
+ * there. The footer is where a visitor looks for the full index of a site.
+ */
+const FOOTER_LINKS = [
+  ...NAV_LINKS,
+  { href: '/categories', label: 'Categories' },
+  { href: '/brands', label: 'Brands' },
+] as const;
+
+/**
  * Reports whether a navigation entry matches the current route.
  *
  * @param pathname - The router's current pathname.
@@ -566,7 +581,7 @@ export function StoreLayout({
               <Typography variant="overline" sx={{ opacity: 0.55 }}>
                 Explore
               </Typography>
-              {NAV_LINKS.map((link) => (
+              {FOOTER_LINKS.map((link) => (
                 <Link
                   key={link.href}
                   component={NextLink}

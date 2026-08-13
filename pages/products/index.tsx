@@ -20,7 +20,7 @@ import type { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import { useCallback, useMemo, useState } from 'react';
 
-import { EmptyState } from '@/components/common/StateViews';
+import { EmptyState, LoadingState } from '@/components/common/StateViews';
 import { PageContainer, Section } from '@/components/common/PageContainer';
 import { StoreLayout } from '@/components/layout/StoreLayout';
 import { ProductGrid } from '@/components/product/ProductCard';
@@ -29,6 +29,7 @@ import {
   SORT_OPTIONS,
   type ProductFilterValues,
 } from '@/components/product/ProductFilters';
+import { useRouteLoading } from '@/hooks/useRouteLoading';
 import { connectToDatabase } from '@/lib/mongodb';
 import { listBanners } from '@/services/marketing.service';
 import { listProducts } from '@/services/product.service';
@@ -85,6 +86,8 @@ export default function ProductsPage({
   const router = useRouter();
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const topBanners = banners.filter((b) => b.position === 'top');
+  // Filtering, sorting and paging are all server round-trips on this page.
+  const isFiltering = useRouteLoading();
 
   /**
    * Writes filter state back to the URL, which re-runs the server query.
@@ -287,7 +290,12 @@ export default function ProductsPage({
                 </Stack>
               )}
 
-              {products.length === 0 ? (
+              {/* While a filter change is in flight the old results are stale
+                  and about to be replaced, so they give way to placeholders of
+                  the same shape rather than sitting there looking current. */}
+              {isFiltering ? (
+                <LoadingState variant="skeleton" skeletonCount={products.length || 8} />
+              ) : products.length === 0 ? (
                 <EmptyState
                   title="No products match your filters"
                   description="Try removing a filter or widening the price range."

@@ -3,6 +3,7 @@
  *
  * @module components/layout/CategoryStrip
  */
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import NextLink from 'next/link';
@@ -10,6 +11,15 @@ import { useRouter } from 'next/router';
 
 import { RADIUS, SHELL_MAX_WIDTH, SURFACE } from '@/theme/tokens';
 import type { CategoryWithParent } from '@/types/models';
+
+/**
+ * How many categories the strip lists before deferring to `/categories`.
+ *
+ * @remarks
+ * Ten fills a desktop row without crowding the "View all" link, and keeps the
+ * mobile row to a swipe or two rather than an unbounded scroll.
+ */
+const MAX_INLINE_CATEGORIES = 10;
 
 /** Props for {@link CategoryStrip}. */
 interface CategoryStripProps {
@@ -44,6 +54,13 @@ export function CategoryStrip({ categories }: CategoryStripProps): JSX.Element |
     typeof router.query.categories === 'string' ? router.query.categories.split(',') : [];
   const isAllActive = router.pathname === '/products' && activeSlugs.length === 0;
 
+  // Beyond this many, the strip stops listing and defers to the directory page.
+  // A row long enough to need serious horizontal scrolling stops working as
+  // navigation: the entries past the fold are invisible and unguessable, and a
+  // "View all" link reaches them in one tap instead.
+  const visible = topLevel.slice(0, MAX_INLINE_CATEGORIES);
+  const hasOverflow = topLevel.length > MAX_INLINE_CATEGORIES;
+
   return (
     <Box
       component="nav"
@@ -75,7 +92,7 @@ export function CategoryStrip({ categories }: CategoryStripProps): JSX.Element |
           }}
         >
           <CategoryLink href="/products" label="All Products" isActive={isAllActive} />
-          {topLevel.map((category) => (
+          {visible.map((category) => (
             <CategoryLink
               key={category._id}
               href={`/products?categories=${category.slug}`}
@@ -83,6 +100,43 @@ export function CategoryStrip({ categories }: CategoryStripProps): JSX.Element |
               isActive={activeSlugs.includes(category.slug)}
             />
           ))}
+
+          {/* Shown only once the list is actually truncated. Offering "View
+              all" beside a row that already shows everything would be a link
+              to nothing new. */}
+          {hasOverflow && (
+            <Box
+              component={NextLink}
+              href="/categories"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.25,
+                flexShrink: 0,
+                ml: 0.5,
+                px: 1.5,
+                py: 0.75,
+                borderRadius: `${RADIUS.sm}px`,
+                fontSize: '0.8125rem',
+                fontWeight: 700,
+                whiteSpace: 'nowrap',
+                textDecoration: 'none',
+                color: 'primary.main',
+                transition: 'background-color 160ms',
+                '&:hover': { bgcolor: SURFACE.subtle },
+                '&:hover .category-strip__arrow': { transform: 'translateX(2px)' },
+                '@media (prefers-reduced-motion: reduce)': {
+                  '&:hover .category-strip__arrow': { transform: 'none' },
+                },
+              }}
+            >
+              View all
+              <ChevronRightIcon
+                className="category-strip__arrow"
+                sx={{ fontSize: 16, transition: 'transform 200ms' }}
+              />
+            </Box>
+          )}
         </Box>
       </Container>
     </Box>
