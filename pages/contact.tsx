@@ -4,19 +4,117 @@
  *
  * @module pages/contact
  */
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import PhoneIcon from '@mui/icons-material/Phone';
 import PlaceIcon from '@mui/icons-material/Place';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { PageContainer, Section } from '@/components/common/PageContainer';
 import { StoreLayout } from '@/components/layout/StoreLayout';
+import { Reveal, RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import { publicEnv } from '@/lib/env';
-import { INNER_SPACING } from '@/theme/spacing';
+import { RADIUS, SHADOW, SURFACE } from '@/theme/tokens';
 import { buildGeneralEnquiryLink } from '@/utils/whatsapp';
+
+/** Props for {@link ContactMethod}. */
+interface ContactMethodProps {
+  icon: JSX.Element;
+  label: string;
+  /** The address, number or destination, shown as the primary line. */
+  value: string;
+  href: string;
+  /** Opens in a new tab, for destinations that leave the site. */
+  external?: boolean;
+  /** Renders the tile in the accent treatment, for the preferred channel. */
+  emphasised?: boolean;
+}
+
+/**
+ * A single contact channel, rendered as a large tappable tile.
+ *
+ * @param props - Channel details and presentation.
+ * @returns The tile element.
+ */
+function ContactMethod({
+  icon,
+  label,
+  value,
+  href,
+  external = false,
+  emphasised = false,
+}: ContactMethodProps): JSX.Element {
+  return (
+    <Box
+      component="a"
+      href={href}
+      {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        // A generous target: this is the page's entire purpose, and most
+        // visitors reach it on a phone.
+        p: { xs: 2.5, md: 3 },
+        borderRadius: `${RADIUS.md}px`,
+        textDecoration: 'none',
+        border: '1px solid',
+        borderColor: emphasised ? 'success.main' : 'divider',
+        bgcolor: emphasised ? 'success.main' : 'background.paper',
+        color: emphasised ? 'common.white' : 'text.primary',
+        transition:
+          'transform 240ms cubic-bezier(0.22,1,0.36,1), box-shadow 240ms, border-color 240ms',
+        '&:hover': {
+          transform: 'translateY(-3px)',
+          boxShadow: SHADOW.md,
+          borderColor: emphasised ? 'success.dark' : SURFACE.borderStrong,
+        },
+        '&:hover .contact-method__arrow': { transform: 'translateX(4px)' },
+        '@media (hover: none)': { '&:hover': { transform: 'none', boxShadow: 'none' } },
+        '@media (prefers-reduced-motion: reduce)': {
+          '&:hover': { transform: 'none' },
+          '&:hover .contact-method__arrow': { transform: 'none' },
+        },
+      }}
+    >
+      <Box
+        aria-hidden
+        sx={{
+          display: 'grid',
+          placeItems: 'center',
+          flexShrink: 0,
+          width: 44,
+          height: 44,
+          borderRadius: `${RADIUS.sm}px`,
+          bgcolor: emphasised ? 'rgba(255,255,255,0.18)' : SURFACE.subtle,
+          color: emphasised ? 'common.white' : 'primary.main',
+        }}
+      >
+        {icon}
+      </Box>
+
+      <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+        <Typography
+          variant="overline"
+          sx={{ display: 'block', opacity: emphasised ? 0.85 : 1, color: emphasised ? 'inherit' : 'text.secondary' }}
+        >
+          {label}
+        </Typography>
+        <Typography sx={{ fontWeight: 600, fontSize: '1rem', wordBreak: 'break-word' }}>
+          {value}
+        </Typography>
+      </Box>
+
+      <ArrowForwardIcon
+        className="contact-method__arrow"
+        sx={{ flexShrink: 0, fontSize: 18, opacity: 0.7, transition: 'transform 220ms' }}
+      />
+    </Box>
+  );
+}
 
 /**
  * The contact page.
@@ -28,50 +126,59 @@ export default function ContactPage(): JSX.Element {
     <StoreLayout title="Contact" description="Call or WhatsApp Manisha Readymades for wholesale enquiries.">
       <PageContainer>
         <Section title="Contact Us" subtitle="We reply fastest on WhatsApp.">
-          <Paper variant="outlined" sx={{ p: INNER_SPACING, maxWidth: 520 }}>
-            <Stack spacing={INNER_SPACING}>
-              <Button
-                size="large"
-                variant="contained"
-                color="success"
-                startIcon={<WhatsAppIcon />}
-                href={buildGeneralEnquiryLink()}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Message us on WhatsApp
-              </Button>
+          <Box sx={{ maxWidth: 560 }}>
+            <RevealGroup sx={{ display: 'grid', gap: 1.5 }}>
+              <RevealItem>
+                <ContactMethod
+                  emphasised
+                  external
+                  icon={<WhatsAppIcon />}
+                  label="WhatsApp"
+                  value="Message us on WhatsApp"
+                  href={buildGeneralEnquiryLink()}
+                />
+              </RevealItem>
 
               {publicEnv.contactPhone && (
-                <Button
-                  size="large"
-                  variant="outlined"
-                  startIcon={<PhoneIcon />}
-                  href={`tel:${publicEnv.contactPhone}`}
-                >
-                  {publicEnv.contactPhone}
-                </Button>
+                <RevealItem>
+                  <ContactMethod
+                    icon={<PhoneIcon />}
+                    label="Phone"
+                    value={publicEnv.contactPhone}
+                    href={`tel:${publicEnv.contactPhone}`}
+                  />
+                </RevealItem>
               )}
 
               {publicEnv.googleMapsUrl && (
-                <Button
-                  size="large"
-                  variant="outlined"
-                  startIcon={<PlaceIcon />}
-                  href={publicEnv.googleMapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Find us on Google Maps
-                </Button>
+                <RevealItem>
+                  <ContactMethod
+                    external
+                    icon={<PlaceIcon />}
+                    label="Visit"
+                    value="Find us on Google Maps"
+                    href={publicEnv.googleMapsUrl}
+                  />
+                </RevealItem>
               )}
+            </RevealGroup>
 
-              <Typography variant="body2" color="text.secondary">
-                Bulk orders, custom printing and stock availability — send us a message and we will
-                get back to you the same day.
-              </Typography>
-            </Stack>
-          </Paper>
+            <Reveal delay={0.1}>
+              <Stack
+                sx={{
+                  mt: 3,
+                  p: 2.5,
+                  borderRadius: `${RADIUS.md}px`,
+                  bgcolor: SURFACE.subtle,
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  Bulk orders, custom printing and stock availability — send us a message and we
+                  will get back to you the same day.
+                </Typography>
+              </Stack>
+            </Reveal>
+          </Box>
         </Section>
       </PageContainer>
     </StoreLayout>

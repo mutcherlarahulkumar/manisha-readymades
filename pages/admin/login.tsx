@@ -16,7 +16,8 @@ import { useEffect } from 'react';
 import { FormTextField } from '@/components/form/fields';
 import { useAuth } from '@/hooks/useAuth';
 import { notifyError, notifySuccess } from '@/lib/toast';
-import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
+import { OUTER_SPACING } from '@/theme/spacing';
+import { RADIUS, SHADOW } from '@/theme/tokens';
 import { loginSchema, type LoginFormValues } from '@/validation/admin.schema';
 
 /** Blank credentials. */
@@ -66,13 +67,29 @@ export default function AdminLoginPage(): JSX.Element {
         <meta name="robots" content="noindex, nofollow" />
       </Head>
 
-      <Paper variant="outlined" sx={{ p: OUTER_SPACING, width: '100%', maxWidth: 400 }}>
-        <Stack spacing={INNER_SPACING}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: { xs: 3, sm: 4 },
+          width: '100%',
+          maxWidth: 420,
+          borderRadius: `${RADIUS.lg}px`,
+          // The one card on an otherwise empty screen carries a real shadow:
+          // there is nothing else for the eye to land on, so it should read as
+          // a distinct object rather than an outline on a flat field.
+          boxShadow: SHADOW.md,
+          bgcolor: 'background.paper',
+        }}
+      >
+        <Stack spacing={3}>
           <Box>
-            <Typography variant="h4" component="h1">
+            <Typography variant="overline" color="text.secondary" component="p">
+              Manisha Readymades
+            </Typography>
+            <Typography variant="h3" component="h1" sx={{ mt: 0.5 }}>
               Admin sign in
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               Manisha Readymades dashboard
             </Typography>
           </Box>
@@ -84,10 +101,17 @@ export default function AdminLoginPage(): JSX.Element {
           >
             {({ isSubmitting }) => (
               <Form noValidate>
-                <Stack spacing={INNER_SPACING}>
+                <Stack spacing={2}>
                   <FormTextField name="email" label="Email" type="email" required />
                   <FormTextField name="password" label="Password" type="password" required />
-                  <Button type="submit" variant="contained" size="large" disabled={isSubmitting}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    size="large"
+                    fullWidth
+                    disabled={isSubmitting}
+                    sx={{ mt: 1 }}
+                  >
                     {isSubmitting ? 'Signing in…' : 'Sign in'}
                   </Button>
                 </Stack>

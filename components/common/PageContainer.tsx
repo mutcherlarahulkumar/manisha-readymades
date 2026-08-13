@@ -12,7 +12,14 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
-import { CONTENT_MAX_WIDTH, INNER_SPACING, OUTER_SPACING, SECTION_SPACING } from '@/theme/spacing';
+import { Reveal } from '@/components/motion/Reveal';
+import {
+  CONTENT_MAX_WIDTH,
+  HEADING_SPACING,
+  INNER_SPACING,
+  OUTER_SPACING,
+  SECTION_SPACING,
+} from '@/theme/spacing';
 
 /** Props for {@link PageContainer}. */
 interface PageContainerProps {
@@ -34,7 +41,7 @@ export function PageContainer({ children, disableTopPadding = false }: PageConta
       component="main"
       sx={{
         maxWidth: `${CONTENT_MAX_WIDTH}px !important`,
-        pt: disableTopPadding ? 0 : OUTER_SPACING,
+        pt: disableTopPadding ? 0 : SECTION_SPACING,
         pb: SECTION_SPACING,
       }}
     >
@@ -42,6 +49,16 @@ export function PageContainer({ children, disableTopPadding = false }: PageConta
     </Container>
   );
 }
+
+/**
+ * How much room a section gives itself.
+ *
+ * `page` is the storefront rhythm: large gaps between sections and a display-
+ * weight heading, so a marketing page reads as a sequence of distinct ideas.
+ * `compact` is the dashboard rhythm, where an admin is scanning many blocks at
+ * once and generous whitespace would mean more scrolling for less information.
+ */
+export type SectionDensity = 'page' | 'compact';
 
 /** Props for {@link Section}. */
 interface SectionProps {
@@ -52,40 +69,64 @@ interface SectionProps {
   subtitle?: string;
   /** Actions aligned to the end of the heading row, e.g. a "New" button. */
   action?: ReactNode;
+  /** Spacing and heading scale. Defaults to the storefront rhythm. */
+  density?: SectionDensity;
 }
 
 /**
  * A titled block of page content, separated from its neighbours by the section
  * rhythm and spacing its own children by the inner step.
  *
- * @param props - Section heading, action and content.
+ * @param props - Section heading, action, density and content.
  * @returns The section element.
+ *
+ * @remarks
+ * The heading block animates in as it enters the viewport; the content below it
+ * does not, because most callers pass a grid that runs its own stagger. Two
+ * competing entrance animations on the same block read as a stutter.
  */
-export function Section({ children, title, subtitle, action }: SectionProps): JSX.Element {
+export function Section({
+  children,
+  title,
+  subtitle,
+  action,
+  density = 'page',
+}: SectionProps): JSX.Element {
+  const isPage = density === 'page';
+
   return (
-    <Box component="section" sx={{ mb: SECTION_SPACING }}>
+    <Box
+      component="section"
+      sx={{ mb: isPage ? SECTION_SPACING : OUTER_SPACING, '&:last-child': { mb: 0 } }}
+    >
       {(title || action) && (
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          justifyContent="space-between"
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-          spacing={INNER_SPACING}
-          sx={{ mb: OUTER_SPACING }}
-        >
-          <Box>
-            {title && (
-              <Typography variant="h3" component="h2">
-                {title}
-              </Typography>
-            )}
-            {subtitle && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                {subtitle}
-              </Typography>
-            )}
-          </Box>
-          {action && <Box sx={{ flexShrink: 0 }}>{action}</Box>}
-        </Stack>
+        <Reveal>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            justifyContent="space-between"
+            alignItems={{ xs: 'stretch', sm: 'flex-end' }}
+            spacing={INNER_SPACING}
+            sx={{ mb: isPage ? HEADING_SPACING : OUTER_SPACING }}
+          >
+            <Box sx={{ minWidth: 0 }}>
+              {title && (
+                <Typography variant={isPage ? 'h2' : 'h4'} component="h2">
+                  {title}
+                </Typography>
+              )}
+              {subtitle && (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: isPage ? 1 : 0.5, maxWidth: '60ch' }}
+                >
+                  {subtitle}
+                </Typography>
+              )}
+            </Box>
+            {action && <Box sx={{ flexShrink: 0 }}>{action}</Box>}
+          </Stack>
+        </Reveal>
       )}
       {children}
     </Box>

@@ -3,6 +3,7 @@
  *
  * @module components/layout/StoreLayout
  */
+import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import AppBar from '@mui/material/AppBar';
@@ -13,18 +14,21 @@ import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
-import List from '@mui/material/List';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
 import Stack from '@mui/material/Stack';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
+import { m, useReducedMotion } from 'framer-motion';
 import Head from 'next/head';
 import NextLink from 'next/link';
+import { useRouter } from 'next/router';
 import { useState, type ReactNode } from 'react';
 
+import { HeaderSearch } from '@/components/layout/HeaderSearch';
+import { useScrolled } from '@/hooks/useScrolled';
 import { publicEnv } from '@/lib/env';
-import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
+import { DURATION, EASE, staggerContainer } from '@/theme/motion';
+import { OUTER_SPACING } from '@/theme/spacing';
+import { HEADER_HEIGHT, RADIUS, SHADOW, SHELL_MAX_WIDTH, SURFACE } from '@/theme/tokens';
 import type { Banner } from '@/types/models';
 import { buildGeneralEnquiryLink } from '@/utils/whatsapp';
 
@@ -35,6 +39,77 @@ const NAV_LINKS = [
   { href: '/custom-printing', label: 'Custom Printing' },
   { href: '/contact', label: 'Contact' },
 ] as const;
+
+/**
+ * Reports whether a navigation entry matches the current route.
+ *
+ * @param pathname - The router's current pathname.
+ * @param href - The entry's target.
+ * @returns `true` when the entry should read as active.
+ *
+ * @remarks
+ * `/` would otherwise prefix-match every route, so the home entry is compared
+ * exactly while the rest match their sub-pages — the product detail page keeps
+ * "Products" highlighted.
+ */
+function isActiveRoute(pathname: string, href: string): boolean {
+  return href === '/' ? pathname === '/' : pathname.startsWith(href);
+}
+
+/** Props for {@link NavLink}. */
+interface NavLinkProps {
+  href: string;
+  label: string;
+  isActive: boolean;
+}
+
+/**
+ * A desktop navigation link with an underline that grows from the centre.
+ *
+ * @param props - Target, label and active state.
+ * @returns The link element.
+ *
+ * @remarks
+ * The underline is a pseudo-element scaled on the X axis rather than an
+ * animated `width`, so hovering the navigation never triggers layout.
+ */
+function NavLink({ href, label, isActive }: NavLinkProps): JSX.Element {
+  return (
+    <Box
+      component={NextLink}
+      href={href}
+      aria-current={isActive ? 'page' : undefined}
+      sx={{
+        position: 'relative',
+        px: 0.5,
+        py: 1,
+        fontSize: '0.9375rem',
+        fontWeight: isActive ? 600 : 500,
+        color: isActive ? 'primary.main' : 'text.primary',
+        textDecoration: 'none',
+        whiteSpace: 'nowrap',
+        transition: 'color 180ms',
+        '&:hover': { color: 'primary.main' },
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 2,
+          height: 2,
+          borderRadius: 2,
+          bgcolor: 'primary.main',
+          transform: isActive ? 'scaleX(1)' : 'scaleX(0)',
+          transformOrigin: 'center',
+          transition: 'transform 240ms cubic-bezier(0.22, 1, 0.36, 1)',
+        },
+        '&:hover::after': { transform: 'scaleX(1)' },
+      }}
+    >
+      {label}
+    </Box>
+  );
+}
 
 /** Props for {@link StoreLayout}. */
 interface StoreLayoutProps {
@@ -60,6 +135,9 @@ export function StoreLayout({
   topBanners = [],
 }: StoreLayoutProps): JSX.Element {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const router = useRouter();
+  const isScrolled = useScrolled(8);
+  const prefersReducedMotion = useReducedMotion();
   const pageTitle = title ? `${title} · Manisha Readymades` : 'Manisha Readymades · Wholesale Garment Supplier';
 
   return (
@@ -71,101 +149,290 @@ export function StoreLayout({
 
       {/* Announcement strip: admin-controlled, hidden entirely when empty. */}
       {topBanners.length > 0 && (
-        <Box sx={{ bgcolor: 'secondary.main', color: 'secondary.contrastText', py: 1 }}>
-          <Container>
-            <Typography variant="body2" align="center" sx={{ fontWeight: 600 }}>
-              {topBanners.map((banner) => banner.title).join('  •  ')}
+        <Box
+          sx={{
+            bgcolor: SURFACE.inverse,
+            color: 'common.white',
+            py: 0.75,
+            // Deliberately not sticky. The strip is an announcement, not a
+            // control, and pinning it would cost 36px of every screen for the
+            // life of the session.
+          }}
+        >
+          <Container sx={{ maxWidth: `${SHELL_MAX_WIDTH}px !important` }}>
+            <Typography
+              variant="caption"
+              align="center"
+              component="p"
+              sx={{ fontWeight: 600, letterSpacing: '0.04em' }}
+            >
+              {topBanners.map((banner, index) => (
+                <Box component="span" key={banner._id}>
+                  {/* The separator alone is tinted with the accent colour, so a
+                      multi-banner strip stays scannable without the titles
+                      themselves changing colour. */}
+                  {index > 0 && (
+                    <Box component="span" aria-hidden sx={{ color: 'secondary.light', mx: 1.5 }}>
+                      •
+                    </Box>
+                  )}
+                  {banner.title}
+                </Box>
+              ))}
             </Typography>
           </Container>
         </Box>
       )}
 
-      <AppBar position="sticky" color="inherit" elevation={0} sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Container>
-          <Toolbar disableGutters sx={{ gap: INNER_SPACING }}>
-            <Typography
+      <AppBar
+        position="sticky"
+        color="inherit"
+        elevation={0}
+        sx={{
+          // Translucent with a backdrop blur once scrolled, so product imagery
+          // reads through the header instead of being cut off by it.
+          bgcolor: isScrolled ? 'rgba(255, 255, 255, 0.82)' : 'background.paper',
+          backdropFilter: isScrolled ? 'saturate(180%) blur(16px)' : 'none',
+          WebkitBackdropFilter: isScrolled ? 'saturate(180%) blur(16px)' : 'none',
+          borderBottom: '1px solid',
+          borderColor: isScrolled ? SURFACE.border : 'transparent',
+          boxShadow: isScrolled ? SHADOW.xs : 'none',
+        }}
+      >
+        <Container sx={{ maxWidth: `${SHELL_MAX_WIDTH}px !important` }}>
+          <Toolbar
+            disableGutters
+            sx={{
+              gap: { xs: 1, md: 2, lg: 3 },
+              // Condensing on scroll returns vertical space to the content.
+              // Animating `min-height` is a layout property, but it changes once
+              // per scroll-state flip rather than per frame, so it is not on a
+              // hot path.
+              minHeight: {
+                xs: 60,
+                md: isScrolled ? HEADER_HEIGHT.scrolled : HEADER_HEIGHT.rest,
+              },
+              transition: 'min-height 280ms cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+          >
+            <Box
               component={NextLink}
               href="/"
-              variant="h5"
-              sx={{ flexGrow: 1, color: 'primary.main', textDecoration: 'none', fontWeight: 700 }}
+              aria-label="Manisha Readymades — home"
+              sx={{ textDecoration: 'none', flexShrink: 0, mr: 'auto' }}
             >
-              Manisha Readymades
-            </Typography>
-
-            <Stack direction="row" spacing={INNER_SPACING} sx={{ display: { xs: 'none', md: 'flex' } }}>
-              {NAV_LINKS.map((link) => (
-                <Button key={link.href} component={NextLink} href={link.href} color="inherit">
-                  {link.label}
-                </Button>
-              ))}
-              <Button
-                variant="contained"
-                color="success"
-                startIcon={<WhatsAppIcon />}
-                href={buildGeneralEnquiryLink()}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Typography
+                component="span"
+                sx={{
+                  display: 'block',
+                  color: 'primary.main',
+                  fontWeight: 800,
+                  letterSpacing: '-0.03em',
+                  lineHeight: 1.1,
+                  fontSize: { xs: '1.0625rem', sm: '1.1875rem', md: '1.3125rem' },
+                }}
               >
-                WhatsApp
-              </Button>
+                Manisha Readymades
+              </Typography>
+              <Typography
+                component="span"
+                variant="overline"
+                sx={{
+                  display: { xs: 'none', sm: 'block' },
+                  color: 'text.secondary',
+                  fontSize: '0.5625rem',
+                  letterSpacing: '0.18em',
+                  lineHeight: 1.4,
+                }}
+              >
+                Wholesale Garments
+              </Typography>
+            </Box>
+
+            <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+              <HeaderSearch />
+            </Box>
+
+            <Stack
+              direction="row"
+              spacing={{ md: 2, lg: 3 }}
+              alignItems="center"
+              sx={{ display: { xs: 'none', md: 'flex' } }}
+            >
+              {NAV_LINKS.map((link) => (
+                <NavLink
+                  key={link.href}
+                  href={link.href}
+                  label={link.label}
+                  isActive={isActiveRoute(router.pathname, link.href)}
+                />
+              ))}
             </Stack>
+
+            <Button
+              variant="contained"
+              color="success"
+              size="small"
+              startIcon={<WhatsAppIcon />}
+              href={buildGeneralEnquiryLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ display: { xs: 'none', md: 'inline-flex' }, flexShrink: 0 }}
+            >
+              WhatsApp
+            </Button>
 
             <IconButton
               aria-label="Open navigation menu"
+              aria-expanded={isDrawerOpen}
               onClick={() => setIsDrawerOpen(true)}
-              sx={{ display: { xs: 'inline-flex', md: 'none' } }}
+              sx={{ display: { xs: 'inline-flex', md: 'none' }, ml: 0.5 }}
             >
               <MenuIcon />
             </IconButton>
           </Toolbar>
+
+          {/* On phones the search field gets its own row rather than being
+              buried in the menu: it is the primary way a wholesale buyer looks
+              for a specific SKU, and it should never be more than one tap away. */}
+          <Box sx={{ display: { xs: 'block', md: 'none' }, pb: 1.25 }}>
+            <HeaderSearch fullWidth />
+          </Box>
         </Container>
       </AppBar>
 
-      <Drawer anchor="right" open={isDrawerOpen} onClose={() => setIsDrawerOpen(false)}>
-        <Box sx={{ width: 260, p: INNER_SPACING }} role="presentation" onClick={() => setIsDrawerOpen(false)}>
-          <List>
-            {NAV_LINKS.map((link) => (
-              <ListItemButton key={link.href} component={NextLink} href={link.href}>
-                <ListItemText primary={link.label} />
-              </ListItemButton>
-            ))}
-          </List>
-          <Divider sx={{ my: INNER_SPACING }} />
-          <Button
-            fullWidth
-            variant="contained"
-            color="success"
-            startIcon={<WhatsAppIcon />}
-            href={buildGeneralEnquiryLink()}
-            target="_blank"
-            rel="noopener noreferrer"
+      <Drawer
+        anchor="right"
+        open={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        PaperProps={{ sx: { width: { xs: '86vw', sm: 340 }, maxWidth: 380 } }}
+      >
+        <Box
+          sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: OUTER_SPACING }}
+          role="presentation"
+        >
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+            <Typography variant="overline" color="text.secondary">
+              Menu
+            </Typography>
+            <IconButton onClick={() => setIsDrawerOpen(false)} aria-label="Close navigation menu" edge="end">
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+
+          {/* Menu entries arrive in sequence. The stagger is short enough that
+              the list reads as one movement rather than four. */}
+          <m.nav
+            variants={prefersReducedMotion ? undefined : staggerContainer(0.05, 0.08)}
+            initial={prefersReducedMotion ? undefined : 'hidden'}
+            animate={prefersReducedMotion ? undefined : 'visible'}
           >
-            WhatsApp Us
-          </Button>
+            <Stack component="ul" sx={{ listStyle: 'none', p: 0, m: 0 }}>
+              {NAV_LINKS.map((link) => {
+                const isActive = isActiveRoute(router.pathname, link.href);
+                return (
+                  <m.li
+                    key={link.href}
+                    variants={
+                      prefersReducedMotion
+                        ? undefined
+                        : {
+                            hidden: { opacity: 0, x: 16 },
+                            visible: {
+                              opacity: 1,
+                              x: 0,
+                              transition: { duration: DURATION.base, ease: EASE.standard },
+                            },
+                          }
+                    }
+                  >
+                    <Box
+                      component={NextLink}
+                      href={link.href}
+                      onClick={() => setIsDrawerOpen(false)}
+                      aria-current={isActive ? 'page' : undefined}
+                      sx={{
+                        display: 'block',
+                        // Comfortably above the 44px touch-target minimum.
+                        py: 1.75,
+                        px: 1,
+                        mx: -1,
+                        borderRadius: `${RADIUS.sm}px`,
+                        fontSize: '1.125rem',
+                        fontWeight: isActive ? 700 : 500,
+                        color: isActive ? 'primary.main' : 'text.primary',
+                        textDecoration: 'none',
+                        transition: 'background-color 160ms, color 160ms',
+                        '&:active': { bgcolor: 'action.hover' },
+                      }}
+                    >
+                      {link.label}
+                    </Box>
+                  </m.li>
+                );
+              })}
+            </Stack>
+          </m.nav>
+
+          <Box sx={{ mt: 'auto', pt: 3 }}>
+            <Divider sx={{ mb: OUTER_SPACING }} />
+            <Button
+              fullWidth
+              size="large"
+              variant="contained"
+              color="success"
+              startIcon={<WhatsAppIcon />}
+              href={buildGeneralEnquiryLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              WhatsApp Us
+            </Button>
+          </Box>
         </Box>
       </Drawer>
 
       <Box sx={{ flexGrow: 1 }}>{children}</Box>
 
-      <Box component="footer" sx={{ bgcolor: 'primary.dark', color: 'common.white', py: OUTER_SPACING, mt: 'auto' }}>
-        <Container>
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={OUTER_SPACING}
-            justifyContent="space-between"
+      <Box
+        component="footer"
+        sx={{
+          bgcolor: SURFACE.inverse,
+          color: 'common.white',
+          pt: { xs: 6, md: 8 },
+          pb: OUTER_SPACING,
+          mt: 'auto',
+        }}
+      >
+        <Container sx={{ maxWidth: `${SHELL_MAX_WIDTH}px !important` }}>
+          <Box
+            sx={{
+              display: 'grid',
+              // Stacked columns on mobile need a larger gap than side-by-side
+              // ones on desktop, or the groups run together vertically.
+              gap: { xs: 5, md: 4 },
+              // The brand column is given twice the width of the link columns so
+              // its paragraph sets at a readable measure instead of a narrow
+              // ribbon of text.
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: '2fr 1fr 1fr' },
+            }}
           >
-            <Box>
-              <Typography variant="h6">Manisha Readymades</Typography>
-              <Typography variant="body2" sx={{ opacity: 0.8, mt: 1, maxWidth: 320 }}>
+            <Box sx={{ gridColumn: { sm: '1 / -1', md: 'auto' } }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+                Manisha Readymades
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.72, mt: 1.5, maxWidth: 340, lineHeight: 1.7 }}>
                 Wholesale garment supplier since 2020. Bulk orders, custom printing and fast
                 WhatsApp support.
               </Typography>
             </Box>
 
-            <Stack spacing={1}>
-              <Typography variant="subtitle2">Contact</Typography>
+            <Stack spacing={1.25}>
+              <Typography variant="overline" sx={{ opacity: 0.55 }}>
+                Contact
+              </Typography>
               {publicEnv.contactPhone && (
-                <Link href={`tel:${publicEnv.contactPhone}`} color="inherit" underline="hover">
+                <Link href={`tel:${publicEnv.contactPhone}`} color="inherit" sx={FOOTER_LINK_SX}>
                   {publicEnv.contactPhone}
                 </Link>
               )}
@@ -174,7 +441,7 @@ export function StoreLayout({
                 target="_blank"
                 rel="noopener noreferrer"
                 color="inherit"
-                underline="hover"
+                sx={FOOTER_LINK_SX}
               >
                 WhatsApp
               </Link>
@@ -184,31 +451,33 @@ export function StoreLayout({
                   target="_blank"
                   rel="noopener noreferrer"
                   color="inherit"
-                  underline="hover"
+                  sx={FOOTER_LINK_SX}
                 >
                   Find us on Google Maps
                 </Link>
               )}
             </Stack>
 
-            <Stack spacing={1}>
-              <Typography variant="subtitle2">Explore</Typography>
+            <Stack spacing={1.25}>
+              <Typography variant="overline" sx={{ opacity: 0.55 }}>
+                Explore
+              </Typography>
               {NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}
                   component={NextLink}
                   href={link.href}
                   color="inherit"
-                  underline="hover"
+                  sx={FOOTER_LINK_SX}
                 >
                   {link.label}
                 </Link>
               ))}
             </Stack>
-          </Stack>
+          </Box>
 
-          <Divider sx={{ my: OUTER_SPACING, borderColor: 'rgba(255,255,255,0.2)' }} />
-          <Typography variant="caption" sx={{ opacity: 0.7 }}>
+          <Divider sx={{ my: OUTER_SPACING, borderColor: 'rgba(255,255,255,0.12)' }} />
+          <Typography variant="caption" sx={{ opacity: 0.6 }}>
             © {new Date().getFullYear()} Manisha Readymades. All rights reserved.
           </Typography>
         </Container>
@@ -216,3 +485,21 @@ export function StoreLayout({
     </Box>
   );
 }
+
+
+/**
+ * Footer link styling: dimmed at rest, brightening and stepping forward
+ * slightly on hover.
+ *
+ * @remarks
+ * Shared as a constant because four separate `sx` objects with the same
+ * intention is exactly how a design system starts to drift.
+ */
+const FOOTER_LINK_SX = {
+  opacity: 0.72,
+  width: 'fit-content',
+  textDecoration: 'none',
+  transition: 'opacity 180ms, transform 180ms',
+  '&:hover': { opacity: 1, transform: 'translateX(2px)' },
+  '@media (prefers-reduced-motion: reduce)': { '&:hover': { transform: 'none' } },
+} as const;

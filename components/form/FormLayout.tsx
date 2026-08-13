@@ -14,7 +14,8 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
-import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
+import { CONTENT_MAX_WIDTH, INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
+import { RADIUS, SHADOW, SURFACE } from '@/theme/tokens';
 
 /** Props for {@link FormPanel}. */
 interface FormPanelProps {
@@ -33,8 +34,10 @@ interface FormPanelProps {
  */
 export function FormPanel({ title, description, children }: FormPanelProps): JSX.Element {
   return (
-    <Paper variant="outlined" sx={{ mb: OUTER_SPACING }}>
-      <Box sx={{ p: INNER_SPACING }}>
+    <Paper variant="outlined" sx={{ mb: OUTER_SPACING, borderRadius: `${RADIUS.md}px` }}>
+      {/* The header sits on a tinted band so a long form reads as a stack of
+          labelled groups when scrolled past quickly. */}
+      <Box sx={{ p: 2, bgcolor: SURFACE.subtle, borderRadius: `${RADIUS.md}px ${RADIUS.md}px 0 0` }}>
         <Typography variant="h5" component="h3">
           {title}
         </Typography>
@@ -45,7 +48,7 @@ export function FormPanel({ title, description, children }: FormPanelProps): JSX
         )}
       </Box>
       <Divider />
-      <Stack spacing={INNER_SPACING} sx={{ p: INNER_SPACING }}>
+      <Stack spacing={2} sx={{ p: { xs: 2, md: 2.5 } }}>
         {children}
       </Stack>
     </Paper>
@@ -99,12 +102,27 @@ export function FormActions({ children }: FormActionsProps): JSX.Element {
         position: 'sticky',
         bottom: 0,
         zIndex: 2,
-        p: INNER_SPACING,
+        p: 2,
         borderRadius: 0,
-        bgcolor: 'background.paper',
+        // Full-bleed against the page gutters, so the bar reads as chrome
+        // pinned to the viewport rather than as another panel in the form.
+        mx: { xs: -2, md: -3 },
+        px: { xs: 2, md: 3 },
+        borderLeft: 0,
+        borderRight: 0,
+        borderBottom: 0,
+        bgcolor: 'rgba(255, 255, 255, 0.92)',
+        backdropFilter: 'saturate(180%) blur(12px)',
+        WebkitBackdropFilter: 'saturate(180%) blur(12px)',
+        boxShadow: SHADOW.sm,
       }}
     >
-      <Stack direction="row" spacing={INNER_SPACING} justifyContent="flex-end">
+      <Stack
+        direction="row"
+        spacing={INNER_SPACING}
+        justifyContent="flex-end"
+        sx={{ maxWidth: CONTENT_MAX_WIDTH, mx: 'auto', width: '100%' }}
+      >
         {children}
       </Stack>
     </Paper>

@@ -130,7 +130,7 @@ export default function AdminOrdersPage(): JSX.Element {
         </Button>
       }
     >
-      <Section title="Tracking">
+      <Section density="compact" title="Tracking">
         <StatGrid columns={6}>
           <StatCard label="Pending" value={stats.data?.pending ?? 0} color="warning" />
           <StatCard label="Processing" value={stats.data?.processing ?? 0} color="info" />

@@ -53,7 +53,7 @@ export default function AdminDashboardPage(): JSX.Element {
           void analytics.refresh();
         }}
       >
-        <Section title="Order tracking" subtitle="Every order currently in the system.">
+        <Section density="compact" title="Order tracking" subtitle="Every order currently in the system.">
           <StatGrid columns={6}>
             <StatCard
               label="Pending"
@@ -100,7 +100,7 @@ export default function AdminDashboardPage(): JSX.Element {
           </StatGrid>
         </Section>
 
-        <Section title="Catalogue" subtitle="What visitors can currently see.">
+        <Section density="compact" title="Catalogue" subtitle="What visitors can currently see.">
           <StatGrid>
             <StatCard
               label="Active products"
@@ -133,7 +133,7 @@ export default function AdminDashboardPage(): JSX.Element {
           </StatGrid>
         </Section>
 
-        <Section title="Visitor interest" subtitle="Last 30 days.">
+        <Section density="compact" title="Visitor interest" subtitle="Last 30 days.">
           <StatGrid columns={3}>
             <StatCard label="Product views" value={analytics.data?.engagement.views ?? 0} icon={<InventoryIcon />} />
             <StatCard

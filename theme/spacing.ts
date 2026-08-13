@@ -39,10 +39,28 @@ export const OUTER_SPACING: ResponsiveStyleValue<number> = { xs: 2, md: 3 };
 export const INNER_SPACING: ResponsiveStyleValue<number> = { xs: 1, md: 2 };
 
 /**
- * Vertical rhythm between page sections — double the outer spacing, so sections
- * read as separated without introducing a fifth magic number.
+ * Vertical rhythm between page sections: 48px on mobile, 80px from `md` up.
+ *
+ * @remarks
+ * A multiple of the outer step, so it stays inside the same scale. The gap
+ * between sections is the main thing that makes a page feel composed rather
+ * than stacked — when it is close to the gap *within* a section, the eye cannot
+ * tell where one idea ends and the next begins. Section spacing is therefore
+ * kept several times larger than {@link OUTER_SPACING}, and generously so on
+ * desktop where there is room for it.
  */
-export const SECTION_SPACING: ResponsiveStyleValue<number> = { xs: 4, md: 6 };
+export const SECTION_SPACING: ResponsiveStyleValue<number> = { xs: 6, md: 10 };
+
+/**
+ * The gap between a section's heading block and its content: 24px on mobile,
+ * 32px from `md` up.
+ *
+ * @remarks
+ * Sits deliberately between {@link OUTER_SPACING} and {@link SECTION_SPACING}.
+ * A heading needs more air beneath it than the items it introduces have between
+ * them, or it reads as the first item in the list rather than as its title.
+ */
+export const HEADING_SPACING: ResponsiveStyleValue<number> = { xs: 3, md: 4 };
 
 /** Maximum content width, keeping line lengths readable on wide screens. */
 export const CONTENT_MAX_WIDTH = 1280;
