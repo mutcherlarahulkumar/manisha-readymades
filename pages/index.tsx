@@ -79,6 +79,19 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
   /** Entrance for the hero's own children, sequenced behind the panel itself. */
   const heroStagger = prefersReducedMotion ? undefined : staggerContainer(0.08, 0.1);
 
+  /*
+   * The hero's picture.
+   *
+   * An admin-uploaded hero banner is always preferred. When none is set the
+   * first featured product's photograph stands in, so the panel is never a
+   * block of flat navy with text floating in it — which is what an unconfigured
+   * store used to look like. The fallback is real catalogue imagery rather than
+   * a decorative placeholder, so it says something true about the shop, and it
+   * disappears the moment a proper banner is uploaded.
+   */
+  const heroImage =
+    heroBanner?.image ?? featured.find((product) => product.images[0])?.images[0] ?? null;
+
   return (
     <StoreLayout topBanners={topBanners} categories={categories}>
       {/*
@@ -109,7 +122,7 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
               // The type column is the wider of the two. A near-even split
               // makes the headline wrap early while the photograph has more
               // room than it needs.
-              gridTemplateColumns: { xs: '1fr', md: heroBanner ? '1.15fr 0.85fr' : '1fr' },
+              gridTemplateColumns: { xs: '1fr', md: heroImage ? '1.15fr 0.85fr' : '1fr' },
               alignItems: 'stretch',
               minHeight: { xs: 'auto', md: 400 },
             }}
@@ -208,7 +221,7 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
               </m.div>
             </Box>
 
-            {heroBanner && (
+            {heroImage && (
               <Box
                 sx={{
                   position: 'relative',
@@ -224,8 +237,8 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary asset. */}
                   <img
-                    src={heroBanner.image.url}
-                    alt={heroBanner.image.alt ?? heroBanner.title}
+                    src={heroImage.url}
+                    alt={heroImage.alt ?? ''}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 </m.div>

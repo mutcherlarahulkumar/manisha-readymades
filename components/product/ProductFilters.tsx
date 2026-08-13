@@ -8,18 +8,15 @@
  * @module components/product/ProductFilters
  */
 import ClearIcon from '@mui/icons-material/Clear';
-import SearchIcon from '@mui/icons-material/Search';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import InputAdornment from '@mui/material/InputAdornment';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useEffect, useState } from 'react';
 
 import { INNER_SPACING } from '@/theme/spacing';
 import { RADIUS, SURFACE } from '@/theme/tokens';
@@ -101,7 +98,7 @@ const CHECKBOX_ROW_SX = {
 } as const;
 
 /**
- * The filter sidebar: search, categories, brands, sizes, price and sort.
+ * The filter sidebar: sort, categories, brands, sizes and price range.
  *
  * @param props - Current values, available options and change handlers.
  * @returns The filter panel element.
@@ -113,20 +110,6 @@ export function ProductFilters({
   onChange,
   onReset,
 }: ProductFiltersProps): JSX.Element {
-  // The search box is debounced locally so each keystroke does not trigger a
-  // request or a history entry.
-  const [searchDraft, setSearchDraft] = useState(values.search);
-
-  useEffect(() => {
-    setSearchDraft(values.search);
-  }, [values.search]);
-
-  useEffect(() => {
-    if (searchDraft === values.search) return;
-    const timer = window.setTimeout(() => onChange({ ...values, search: searchDraft }), 400);
-    return () => window.clearTimeout(timer);
-  }, [searchDraft, values, onChange]);
-
   const topLevel = categories.filter((category) => category.parent === null);
 
   return (
@@ -143,20 +126,12 @@ export function ProductFilters({
     >
       <Stack spacing={2.5} divider={<Divider flexItem />}>
         <Stack spacing={INNER_SPACING}>
-          <TextField
-            label="Search"
-            placeholder="Name or SKU"
-            value={searchDraft}
-            onChange={(event) => setSearchDraft(event.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
-          />
-
+          {/*
+            No search field here. It lives in the header, where it is reachable
+            from every page and on every breakpoint; repeating it inside a panel
+            that is behind a drawer on mobile gave two inputs for one piece of
+            state and no way to tell which one was authoritative.
+          */}
           <TextField
             select
             label="Sort by"
