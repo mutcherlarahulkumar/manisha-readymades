@@ -201,8 +201,22 @@ export function QuoteRequestDialog({
               </Stack>
             </DialogContent>
 
-            <DialogActions sx={{ p: INNER_SPACING }}>
-              <Button onClick={onClose} disabled={isSubmitting}>
+            {/* Matches the enquiry dialog: stacked, full-width actions on a
+                full-screen phone dialog, side by side on desktop. */}
+            <DialogActions
+              sx={{
+                p: 2,
+                gap: 1,
+                flexDirection: { xs: 'column-reverse', sm: 'row' },
+                '& > :not(style) ~ :not(style)': { ml: { xs: 0, sm: 1 } },
+              }}
+            >
+              <Button
+                onClick={onClose}
+                disabled={isSubmitting}
+                fullWidth={isFullScreen}
+                size={isFullScreen ? 'large' : 'medium'}
+              >
                 Cancel
               </Button>
               <Button
@@ -211,6 +225,8 @@ export function QuoteRequestDialog({
                 color="success"
                 startIcon={<WhatsAppIcon />}
                 disabled={isSubmitting}
+                fullWidth={isFullScreen}
+                size={isFullScreen ? 'large' : 'medium'}
               >
                 Send on WhatsApp
               </Button>

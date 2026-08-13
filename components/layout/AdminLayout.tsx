@@ -119,15 +119,36 @@ export function AdminLayout({ children, title, subtitle, action }: AdminLayoutPr
   }, [isLoading, isAuthenticated, router]);
 
   if (isLoading || !isAuthenticated || !admin) {
-    return <LoadingState label="Checking your session…" />;
+    // Centred in the viewport rather than pinned to the top of a blank page:
+    // this is the whole screen while the session is verified, not a fragment
+    // of one.
+    return (
+      <Box sx={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>
+        <LoadingState label="Checking your session…" />
+      </Box>
+    );
   }
 
   const navigation = (
-    <Box sx={{ py: INNER_SPACING }}>
-      <Typography variant="h6" sx={{ px: INNER_SPACING, pb: INNER_SPACING, color: 'primary.main' }}>
-        Manisha Admin
-      </Typography>
-      <Divider />
+    <Box sx={{ py: 2, px: 1.5, height: '100%', bgcolor: 'background.paper' }}>
+      <Box sx={{ px: 1, pb: 2 }}>
+        <Typography
+          component={NextLink}
+          href="/admin"
+          sx={{
+            display: 'block',
+            color: 'primary.main',
+            fontWeight: 800,
+            fontSize: '1.0625rem',
+            letterSpacing: '-0.02em',
+            textDecoration: 'none',
+          }}
+        >
+          Manisha Admin
+        </Typography>
+      </Box>
+      <Divider sx={{ mx: -1.5 }} />
+
       {NAV_GROUPS.map((group) => {
         const visible = group.items.filter(
           (item) => !item.roles || item.roles.includes(admin.role),
@@ -138,7 +159,26 @@ export function AdminLayout({ children, title, subtitle, action }: AdminLayoutPr
           <List
             key={group.heading}
             dense
-            subheader={<ListSubheader disableSticky>{group.heading}</ListSubheader>}
+            disablePadding
+            sx={{ mt: 2 }}
+            subheader={
+              <ListSubheader
+                disableSticky
+                disableGutters
+                sx={{
+                  px: 1,
+                  bgcolor: 'transparent',
+                  color: 'text.secondary',
+                  fontSize: '0.6875rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  lineHeight: 2.2,
+                }}
+              >
+                {group.heading}
+              </ListSubheader>
+            }
           >
             {visible.map((item) => {
               // `/admin` must not stay highlighted on every sub-page.
@@ -154,9 +194,30 @@ export function AdminLayout({ children, title, subtitle, action }: AdminLayoutPr
                   href={item.href}
                   selected={isActive}
                   onClick={() => setIsMobileNavOpen(false)}
+                  sx={{
+                    mb: 0.25,
+                    py: 0.85,
+                    // The active entry is a filled pill rather than a tinted
+                    // row, so the current location is obvious at a glance in a
+                    // list of twelve.
+                    '&.Mui-selected': {
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                      '& .MuiListItemIcon-root': { color: 'inherit' },
+                      '&:hover': { bgcolor: 'primary.dark' },
+                    },
+                  }}
                 >
-                  <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.label} />
+                  <ListItemIcon sx={{ minWidth: 36, color: 'text.secondary' }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={item.label}
+                    primaryTypographyProps={{
+                      fontSize: '0.875rem',
+                      fontWeight: isActive ? 600 : 500,
+                    }}
+                  />
                 </ListItemButton>
               );
             })}
@@ -179,7 +240,12 @@ export function AdminLayout({ children, title, subtitle, action }: AdminLayoutPr
           display: { xs: 'none', md: 'block' },
           width: DRAWER_WIDTH,
           flexShrink: 0,
-          '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box' },
+          '& .MuiDrawer-paper': {
+            width: DRAWER_WIDTH,
+            boxSizing: 'border-box',
+            borderRight: '1px solid',
+            borderColor: 'divider',
+          },
         }}
       >
         {navigation}
@@ -203,9 +269,15 @@ export function AdminLayout({ children, title, subtitle, action }: AdminLayoutPr
           position="sticky"
           color="inherit"
           elevation={0}
-          sx={{ borderBottom: '1px solid', borderColor: 'divider' }}
+          sx={{
+            bgcolor: 'rgba(255, 255, 255, 0.85)',
+            backdropFilter: 'saturate(180%) blur(12px)',
+            WebkitBackdropFilter: 'saturate(180%) blur(12px)',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+          }}
         >
-          <Toolbar sx={{ gap: INNER_SPACING }}>
+          <Toolbar sx={{ gap: INNER_SPACING, minHeight: { xs: 60, md: 68 } }}>
             <IconButton
               aria-label="Open navigation"
               onClick={() => setIsMobileNavOpen(true)}
@@ -215,7 +287,7 @@ export function AdminLayout({ children, title, subtitle, action }: AdminLayoutPr
             </IconButton>
 
             <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-              <Typography variant="h5" component="h1" noWrap>
+              <Typography variant="h4" component="h1" noWrap>
                 {title}
               </Typography>
               {subtitle && (
@@ -244,7 +316,10 @@ export function AdminLayout({ children, title, subtitle, action }: AdminLayoutPr
           </Toolbar>
         </AppBar>
 
-        <Box component="main" sx={{ flexGrow: 1, p: OUTER_SPACING }}>
+        <Box
+          component="main"
+          sx={{ flexGrow: 1, p: OUTER_SPACING, bgcolor: 'background.default', minWidth: 0 }}
+        >
           {children}
         </Box>
       </Box>

@@ -16,13 +16,13 @@ import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import InputAdornment from '@mui/material/InputAdornment';
 import MenuItem from '@mui/material/MenuItem';
-import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 
 import { INNER_SPACING } from '@/theme/spacing';
+import { RADIUS, SURFACE } from '@/theme/tokens';
 import { SIZES, type Brand, type CategoryWithParent } from '@/types/models';
 
 /** The filter values a visitor can set. */
@@ -37,7 +37,7 @@ export interface ProductFilterValues {
 }
 
 /** Sort options offered to visitors. */
-const SORT_OPTIONS = [
+export const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest first' },
   { value: 'price_asc', label: 'Price: low to high' },
   { value: 'price_desc', label: 'Price: high to low' },
@@ -66,6 +66,39 @@ interface ProductFiltersProps {
 function toggle(list: readonly string[], value: string): string[] {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
 }
+
+/** Props for {@link FilterGroup}. */
+interface FilterGroupProps {
+  label: string;
+  children: React.ReactNode;
+}
+
+/**
+ * A labelled block within the filter panel.
+ *
+ * @param props - Group heading and controls.
+ * @returns The group element.
+ */
+function FilterGroup({ label, children }: FilterGroupProps): JSX.Element {
+  return (
+    <Box component="fieldset" sx={{ border: 0, p: 0, m: 0, minWidth: 0 }}>
+      <Typography component="legend" variant="overline" color="text.secondary" sx={{ mb: 1 }}>
+        {label}
+      </Typography>
+      {children}
+    </Box>
+  );
+}
+
+/** Shared styling for the compact checkbox rows used by categories and brands. */
+const CHECKBOX_ROW_SX = {
+  ml: -1,
+  mr: 0,
+  borderRadius: `${RADIUS.sm}px`,
+  transition: 'background-color 150ms',
+  '&:hover': { bgcolor: 'action.hover' },
+  '& .MuiFormControlLabel-label': { fontSize: '0.875rem' },
+} as const;
 
 /**
  * The filter sidebar: search, categories, brands, sizes, price and sort.
@@ -97,47 +130,55 @@ export function ProductFilters({
   const topLevel = categories.filter((category) => category.parent === null);
 
   return (
-    <Paper variant="outlined" sx={{ p: INNER_SPACING }} component="aside" aria-label="Product filters">
-      <Stack spacing={INNER_SPACING}>
-        <TextField
-          label="Search"
-          placeholder="Name or SKU"
-          value={searchDraft}
-          onChange={(event) => setSearchDraft(event.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            ),
-          }}
-        />
+    <Box
+      component="aside"
+      aria-label="Product filters"
+      sx={{
+        p: { xs: 2, md: 2.5 },
+        bgcolor: 'background.paper',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: `${RADIUS.md}px`,
+      }}
+    >
+      <Stack spacing={2.5} divider={<Divider flexItem />}>
+        <Stack spacing={INNER_SPACING}>
+          <TextField
+            label="Search"
+            placeholder="Name or SKU"
+            value={searchDraft}
+            onChange={(event) => setSearchDraft(event.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+          />
 
-        <TextField
-          select
-          label="Sort by"
-          value={values.sort}
-          onChange={(event) => onChange({ ...values, sort: event.target.value })}
-        >
-          {SORT_OPTIONS.map((option) => (
-            <MenuItem key={option.value} value={option.value}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </TextField>
+          <TextField
+            select
+            label="Sort by"
+            value={values.sort}
+            onChange={(event) => onChange({ ...values, sort: event.target.value })}
+          >
+            {SORT_OPTIONS.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Stack>
 
-        <Divider />
-
-        <Box>
-          <Typography variant="subtitle2" gutterBottom>
-            Categories
-          </Typography>
+        <FilterGroup label="Categories">
           <Stack>
             {topLevel.map((parent) => {
               const children = categories.filter((child) => child.parent?._id === parent._id);
               return (
                 <Box key={parent._id}>
                   <FormControlLabel
+                    sx={CHECKBOX_ROW_SX}
                     control={
                       <Checkbox
                         size="small"
@@ -150,10 +191,15 @@ export function ProductFilters({
                     label={parent.name}
                   />
                   {children.length > 0 && (
-                    <Stack sx={{ pl: INNER_SPACING }}>
+                    // Sub-categories are indented against a hairline, so the
+                    // hierarchy is visible without a second heading level.
+                    <Stack
+                      sx={{ pl: 2, ml: 1.25, borderLeft: '1px solid', borderColor: 'divider' }}
+                    >
                       {children.map((child) => (
                         <FormControlLabel
                           key={child._id}
+                          sx={CHECKBOX_ROW_SX}
                           control={
                             <Checkbox
                               size="small"
@@ -179,86 +225,98 @@ export function ProductFilters({
               );
             })}
           </Stack>
-        </Box>
+        </FilterGroup>
 
         {brands.length > 0 && (
-          <>
-            <Divider />
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Brands
-              </Typography>
-              <Stack>
-                {brands.map((brand) => (
-                  <FormControlLabel
-                    key={brand._id}
-                    control={
-                      <Checkbox
-                        size="small"
-                        checked={values.brands.includes(brand.slug)}
-                        onChange={() =>
-                          onChange({ ...values, brands: toggle(values.brands, brand.slug) })
-                        }
-                      />
-                    }
-                    label={brand.name}
-                  />
-                ))}
-              </Stack>
-            </Box>
-          </>
+          <FilterGroup label="Brands">
+            <Stack>
+              {brands.map((brand) => (
+                <FormControlLabel
+                  key={brand._id}
+                  sx={CHECKBOX_ROW_SX}
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={values.brands.includes(brand.slug)}
+                      onChange={() =>
+                        onChange({ ...values, brands: toggle(values.brands, brand.slug) })
+                      }
+                    />
+                  }
+                  label={brand.name}
+                />
+              ))}
+            </Stack>
+          </FilterGroup>
         )}
 
-        <Divider />
-
-        <Box>
-          <Typography variant="subtitle2" gutterBottom>
-            Sizes
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-            {SIZES.map((size) => (
-              <FormControlLabel
-                key={size}
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={values.sizes.includes(size)}
-                    onChange={() => onChange({ ...values, sizes: toggle(values.sizes, size) })}
-                  />
-                }
-                label={<Typography variant="body2">{size}</Typography>}
-                sx={{ mr: 1 }}
-              />
-            ))}
+        {/*
+          Sizes are toggle buttons rather than a column of checkboxes. They are
+          short, uniform labels chosen by tapping, and a row of chips shows the
+          whole set at a glance in a fraction of the vertical space — the same
+          control every clothing marketplace uses, for the same reason.
+        */}
+        <FilterGroup label="Sizes">
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+            {SIZES.map((size) => {
+              const isSelected = values.sizes.includes(size);
+              return (
+                <Box
+                  key={size}
+                  component="button"
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() => onChange({ ...values, sizes: toggle(values.sizes, size) })}
+                  sx={{
+                    minWidth: 44,
+                    minHeight: 36,
+                    px: 1.25,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    borderRadius: `${RADIUS.sm}px`,
+                    border: '1px solid',
+                    borderColor: isSelected ? 'primary.main' : SURFACE.borderStrong,
+                    bgcolor: isSelected ? 'primary.main' : 'background.paper',
+                    color: isSelected ? 'primary.contrastText' : 'text.primary',
+                    transition: 'background-color 160ms, border-color 160ms, color 160ms',
+                    '&:hover': {
+                      borderColor: 'primary.main',
+                      bgcolor: isSelected ? 'primary.dark' : 'action.hover',
+                    },
+                  }}
+                >
+                  {size}
+                </Box>
+              );
+            })}
           </Box>
-        </Box>
+        </FilterGroup>
 
-        <Divider />
-
-        <Box>
-          <Typography variant="subtitle2" gutterBottom>
-            Price range (₹)
-          </Typography>
+        <FilterGroup label="Price range (₹)">
           <Stack direction="row" spacing={INNER_SPACING}>
             <TextField
               label="Min"
               type="number"
+              inputProps={{ min: 0, inputMode: 'numeric' }}
               value={values.minPrice}
               onChange={(event) => onChange({ ...values, minPrice: event.target.value })}
             />
             <TextField
               label="Max"
               type="number"
+              inputProps={{ min: 0, inputMode: 'numeric' }}
               value={values.maxPrice}
               onChange={(event) => onChange({ ...values, maxPrice: event.target.value })}
             />
           </Stack>
-        </Box>
+        </FilterGroup>
 
         <Button startIcon={<ClearIcon />} onClick={onReset} variant="outlined" fullWidth>
           Clear all filters
         </Button>
       </Stack>
-    </Paper>
+    </Box>
   );
 }

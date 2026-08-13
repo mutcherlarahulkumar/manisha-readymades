@@ -119,7 +119,7 @@ export default function AdminAnalyticsPage(): JSX.Element {
       <AsyncState isLoading={isLoading} error={error} isEmpty={false} onRetry={() => void refresh()}>
         {data && (
           <>
-            <Section title="Catalogue">
+            <Section density="compact" title="Catalogue">
               <StatGrid>
                 <StatCard label="Total products" value={data.catalogue.totalProducts} />
                 <StatCard label="Active" value={data.catalogue.activeProducts} color="success" />
@@ -132,7 +132,7 @@ export default function AdminAnalyticsPage(): JSX.Element {
               </StatGrid>
             </Section>
 
-            <Section title="Engagement" subtitle={WINDOWS.find((w) => w.value === days)?.label}>
+            <Section density="compact" title="Engagement" subtitle={WINDOWS.find((w) => w.value === days)?.label}>
               <StatGrid columns={3}>
                 <StatCard label="Product views" value={data.engagement.views} />
                 <StatCard
@@ -169,16 +169,16 @@ export default function AdminAnalyticsPage(): JSX.Element {
               )}
             </Section>
 
-            <Section title="Most viewed products">
+            <Section density="compact" title="Most viewed products">
               <RankedTable title="Views" rows={data.mostViewed} metric="Views" />
             </Section>
 
-            <Section title="Most enquired products">
+            <Section density="compact" title="Most enquired products">
               <RankedTable title="Enquiries" rows={data.mostEnquired} metric="Enquiries" />
             </Section>
 
             {data.productsByCategory.length > 0 && (
-              <Section title="Products per category">
+              <Section density="compact" title="Products per category">
                 <Paper variant="outlined" sx={{ p: INNER_SPACING }}>
                   <Box sx={{ width: '100%', overflowX: 'auto' }}>
                     <BarChart
@@ -199,7 +199,7 @@ export default function AdminAnalyticsPage(): JSX.Element {
             )}
 
             {data.productsByBrand.length > 0 && (
-              <Section title="Products per brand">
+              <Section density="compact" title="Products per brand">
                 <Paper variant="outlined" sx={{ p: INNER_SPACING }}>
                   <Box sx={{ width: '100%', overflowX: 'auto' }}>
                     <BarChart

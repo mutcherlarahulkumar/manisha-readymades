@@ -7,17 +7,16 @@
  *
  * @module pages/index
  */
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import CheckIcon from '@mui/icons-material/Check';
 import StarIcon from '@mui/icons-material/Star';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardActionArea from '@mui/material/CardActionArea';
-import CardContent from '@mui/material/CardContent';
 import Container from '@mui/material/Container';
-import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { m, useReducedMotion } from 'framer-motion';
 import type { GetServerSideProps } from 'next';
 import NextLink from 'next/link';
 import { useState } from 'react';
@@ -25,12 +24,15 @@ import { useState } from 'react';
 import { EmptyState } from '@/components/common/StateViews';
 import { PageContainer, Section } from '@/components/common/PageContainer';
 import { StoreLayout } from '@/components/layout/StoreLayout';
+import { Reveal, RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import { ProductGrid } from '@/components/product/ProductCard';
 import { connectToDatabase } from '@/lib/mongodb';
 import { listBanners } from '@/services/marketing.service';
 import { listProducts } from '@/services/product.service';
 import { listCategories } from '@/services/taxonomy.service';
-import { INNER_SPACING, OUTER_SPACING, SECTION_SPACING } from '@/theme/spacing';
+import { EASE, heroRise, staggerContainer } from '@/theme/motion';
+import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
+import { RADIUS, SHADOW, SHELL_MAX_WIDTH, SURFACE } from '@/theme/tokens';
 import type { Banner, CategoryWithParent, ProductListItem } from '@/types/models';
 import { QuoteRequestDialog } from '@/components/quote/QuoteRequestDialog';
 import { productQuerySchema } from '@/validation/product.schema';
@@ -70,103 +72,216 @@ interface HomePageProps {
  */
 export default function HomePage({ banners, categories, featured }: HomePageProps): JSX.Element {
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const topBanners = banners.filter((banner) => banner.position === 'top');
   const heroBanner = banners.find((banner) => banner.position === 'hero');
-  const topLevelCategories = categories.filter((category) => category.parent === null);
+
+  /** Entrance for the hero's own children, sequenced behind the panel itself. */
+  const heroStagger = prefersReducedMotion ? undefined : staggerContainer(0.08, 0.1);
 
   return (
-    <StoreLayout topBanners={topBanners}>
-      {/* Hero */}
-      <Box
-        sx={{
-          bgcolor: 'primary.main',
-          color: 'primary.contrastText',
-          py: SECTION_SPACING,
-          backgroundImage: heroBanner ? `url(${heroBanner.image.url})` : undefined,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          position: 'relative',
-        }}
-      >
-        {heroBanner && (
-          <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(18,36,92,0.72)' }} />
-        )}
-        <Container sx={{ position: 'relative' }}>
-          <Stack spacing={INNER_SPACING} alignItems="center" textAlign="center">
-            <Typography variant="h1" component="h1">
-              {heroBanner?.title ?? 'Wholesale Garment Supplier'}
-            </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 400, opacity: 0.9, maxWidth: 640 }}>
-              {heroBanner?.subtitle ?? 'Premium clothing at wholesale prices.'}
-            </Typography>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={INNER_SPACING} sx={{ pt: 1 }}>
-              <Button component={NextLink} href="/products" variant="contained" color="secondary" size="large">
-                Browse Products
-              </Button>
-              <Button
-                variant="contained"
-                color="success"
-                size="large"
-                startIcon={<WhatsAppIcon />}
-                href={buildGeneralEnquiryLink()}
-                target="_blank"
-                rel="noopener noreferrer"
+    <StoreLayout topBanners={topBanners} categories={categories}>
+      {/*
+        Hero.
+
+        The panel is inset from the page edge and rounded rather than run
+        full-bleed, so the deep navy reads as a deliberate object on the canvas
+        instead of as the page's background colour. On desktop the composition
+        is asymmetric — type on the left, image on the right — which gives the
+        headline a left margin to align against and stops the section looking
+        like a generic centred banner.
+      */}
+      <Box sx={{ px: OUTER_SPACING, pt: { xs: 1.5, md: 2.5 } }}>
+        <Box
+          sx={{
+            maxWidth: SHELL_MAX_WIDTH,
+            mx: 'auto',
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: { xs: `${RADIUS.md}px`, md: `${RADIUS.lg}px` },
+            bgcolor: SURFACE.inverse,
+            color: 'common.white',
+          }}
+        >
+          <Box
+            sx={{
+              display: 'grid',
+              // The type column is the wider of the two. A near-even split
+              // makes the headline wrap early while the photograph has more
+              // room than it needs.
+              gridTemplateColumns: { xs: '1fr', md: heroBanner ? '1.15fr 0.85fr' : '1fr' },
+              alignItems: 'stretch',
+              minHeight: { xs: 'auto', md: 400 },
+            }}
+          >
+            <Box
+              sx={{
+                position: 'relative',
+                zIndex: 1,
+                px: { xs: 2.5, sm: 4, md: 6 },
+                py: { xs: 4.5, sm: 5, md: 6 },
+                display: 'flex',
+                alignItems: 'center',
+                textAlign: { xs: 'center', md: 'left' },
+              }}
+            >
+              <m.div
+                variants={heroStagger}
+                initial={prefersReducedMotion ? undefined : 'hidden'}
+                animate={prefersReducedMotion ? undefined : 'visible'}
+                style={{ width: '100%' }}
               >
-                WhatsApp Us
-              </Button>
-            </Stack>
-          </Stack>
-        </Container>
+                <m.div variants={prefersReducedMotion ? undefined : heroRise}>
+                  <Typography
+                    variant="overline"
+                    sx={{
+                      color: 'secondary.light',
+                      display: 'block',
+                      mb: { xs: 1.5, md: 2 },
+                    }}
+                  >
+                    Manisha Readymades
+                  </Typography>
+                </m.div>
+
+                <m.div variants={prefersReducedMotion ? undefined : heroRise}>
+                  <Typography
+                    variant="h1"
+                    component="h1"
+                    // Capped in characters rather than pixels, so the headline
+                    // breaks into balanced lines whatever the admin types into
+                    // the banner title.
+                    sx={{ maxWidth: '14ch', mx: { xs: 'auto', md: 0 } }}
+                  >
+                    {heroBanner?.title ?? 'Wholesale Garment Supplier'}
+                  </Typography>
+                </m.div>
+
+                <m.div variants={prefersReducedMotion ? undefined : heroRise}>
+                  <Typography
+                    variant="h6"
+                    component="p"
+                    sx={{
+                      fontWeight: 400,
+                      fontSize: { xs: '0.9375rem', md: '1.0625rem' },
+                      opacity: 0.8,
+                      lineHeight: 1.6,
+                      maxWidth: '46ch',
+                      mx: { xs: 'auto', md: 0 },
+                      mt: { xs: 1.5, md: 2 },
+                    }}
+                  >
+                    {heroBanner?.subtitle ?? 'Premium clothing at wholesale prices.'}
+                  </Typography>
+                </m.div>
+
+                <m.div variants={prefersReducedMotion ? undefined : heroRise}>
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={INNER_SPACING}
+                    justifyContent={{ xs: 'center', md: 'flex-start' }}
+                    sx={{ mt: { xs: 3, md: 3.5 } }}
+                  >
+                    <Button
+                      component={NextLink}
+                      href="/products"
+                      variant="contained"
+                      color="secondary"
+                      size="large"
+                      endIcon={<ArrowForwardIcon />}
+                    >
+                      Browse Products
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      size="large"
+                      startIcon={<WhatsAppIcon />}
+                      href={buildGeneralEnquiryLink()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      WhatsApp Us
+                    </Button>
+                  </Stack>
+                </m.div>
+              </m.div>
+            </Box>
+
+            {heroBanner && (
+              <Box
+                sx={{
+                  position: 'relative',
+                  minHeight: { xs: 200, sm: 280, md: 'auto' },
+                  order: { xs: -1, md: 0 },
+                }}
+              >
+                <m.div
+                  initial={prefersReducedMotion ? undefined : { scale: 1.12, opacity: 0 }}
+                  animate={prefersReducedMotion ? undefined : { scale: 1, opacity: 1 }}
+                  transition={{ duration: 1.1, ease: EASE.emphasised }}
+                  style={{ position: 'absolute', inset: 0 }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary asset. */}
+                  <img
+                    src={heroBanner.image.url}
+                    alt={heroBanner.image.alt ?? heroBanner.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </m.div>
+
+                {/*
+                  The image is blended into the panel rather than boxed inside
+                  it. A single directional scrim fades the photograph into the
+                  navy along the edge that meets the type — sideways on desktop,
+                  downwards on mobile where the image sits above the headline.
+                  This is what stops the hero looking like a picture pasted into
+                  a rectangle.
+                */}
+                <Box
+                  aria-hidden
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    // Multi-stop, and eased rather than linear. A two-stop
+                    // gradient over a photograph shows a visible band where the
+                    // ramp begins; the extra stops spread that transition out
+                    // until the image simply dissolves into the panel.
+                    background: {
+                      xs: `linear-gradient(to bottom,
+                        rgba(15,27,61,0.10) 0%,
+                        rgba(15,27,61,0.25) 35%,
+                        rgba(15,27,61,0.65) 70%,
+                        rgba(15,27,61,0.92) 88%,
+                        ${SURFACE.inverse} 100%)`,
+                      md: `linear-gradient(to right,
+                        ${SURFACE.inverse} 0%,
+                        rgba(15,27,61,0.94) 12%,
+                        rgba(15,27,61,0.70) 30%,
+                        rgba(15,27,61,0.34) 52%,
+                        rgba(15,27,61,0.10) 74%,
+                        rgba(15,27,61,0.02) 100%)`,
+                    },
+                  }}
+                />
+              </Box>
+            )}
+          </Box>
+        </Box>
       </Box>
 
       <PageContainer>
-        <Section title="Categories" subtitle="Shop by what your customers ask for most.">
-          {topLevelCategories.length === 0 ? (
-            <EmptyState
-              title="Categories are being set up"
-              description="Product categories will appear here shortly."
-            />
-          ) : (
-            <Box
-              sx={{
-                display: 'grid',
-                gap: OUTER_SPACING,
-                gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-              }}
-            >
-              {topLevelCategories.map((category) => (
-                <Card key={category._id}>
-                  <CardActionArea component={NextLink} href={`/products?categories=${category.slug}`}>
-                    {category.image && (
-                      <Box sx={{ aspectRatio: '16 / 9', overflow: 'hidden' }}>
-                        {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary asset. */}
-                        <img
-                          src={category.image.url}
-                          alt={category.image.alt ?? category.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      </Box>
-                    )}
-                    <CardContent>
-                      <Typography variant="h6">{category.name}</Typography>
-                      {category.description && (
-                        <Typography variant="body2" color="text.secondary">
-                          {category.description}
-                        </Typography>
-                      )}
-                    </CardContent>
-                  </CardActionArea>
-                </Card>
-              ))}
-            </Box>
-          )}
-        </Section>
 
         <Section
           title="Featured Products"
           subtitle="Hand-picked stock, ready to ship."
           action={
-            <Button component={NextLink} href="/products" variant="outlined">
+            <Button
+              component={NextLink}
+              href="/products"
+              variant="outlined"
+              endIcon={<ArrowForwardIcon />}
+            >
               View All Products
             </Button>
           }
@@ -187,47 +302,107 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
         </Section>
 
         <Section title="Custom Printing Services" subtitle="Bulk printing for uniforms, events and campaigns.">
-          <Paper variant="outlined" sx={{ p: OUTER_SPACING }}>
-            <Stack spacing={INNER_SPACING}>
-              {PRINTING_SERVICES.map((service) => (
-                <Typography key={service} variant="body1">
-                  ✓ {service}
-                </Typography>
-              ))}
+          {/*
+            A two-column editorial block rather than a bordered card. The
+            services are the content; wrapping them in a panel would add a
+            border for no organisational benefit, and the section reads better
+            with the air.
+          */}
+          <Reveal>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                gap: { xs: 4, md: 6 },
+                alignItems: 'center',
+                p: { xs: 3, md: 5 },
+                borderRadius: `${RADIUS.lg}px`,
+                bgcolor: SURFACE.subtle,
+              }}
+            >
+              <Stack spacing={1.5}>
+                {PRINTING_SERVICES.map((service) => (
+                  <Stack key={service} direction="row" spacing={1.5} alignItems="center">
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        placeItems: 'center',
+                        flexShrink: 0,
+                        width: 22,
+                        height: 22,
+                        borderRadius: '50%',
+                        bgcolor: 'success.main',
+                        color: 'common.white',
+                      }}
+                    >
+                      <CheckIcon sx={{ fontSize: 14 }} />
+                    </Box>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {service}
+                    </Typography>
+                  </Stack>
+                ))}
+              </Stack>
+
               <Box>
                 <Button
                   variant="contained"
                   color="success"
+                  size="large"
                   startIcon={<WhatsAppIcon />}
                   onClick={() => setIsQuoteOpen(true)}
                 >
                   Request Quote on WhatsApp
                 </Button>
               </Box>
-            </Stack>
-          </Paper>
+            </Box>
+          </Reveal>
         </Section>
 
         <Section title="Why Choose Manisha Readymades">
-          <Box
+          <RevealGroup
             sx={{
               display: 'grid',
-              gap: OUTER_SPACING,
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+              // A one-pixel gap over a tinted background turns the grid into a
+              // set of hairline-separated cells: the structure of a table with
+              // none of the boxiness of six individual outlined cards.
+              gap: '1px',
+              bgcolor: SURFACE.border,
+              border: '1px solid',
+              borderColor: SURFACE.border,
+              borderRadius: `${RADIUS.md}px`,
+              overflow: 'hidden',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, minmax(0, 1fr))',
+                md: 'repeat(3, minmax(0, 1fr))',
+              },
             }}
           >
             {HIGHLIGHTS.map((highlight) => (
-              <Paper key={highlight.title} variant="outlined" sx={{ p: INNER_SPACING }}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <StarIcon color="secondary" fontSize="small" />
-                  <Typography variant="subtitle1">{highlight.title}</Typography>
-                </Stack>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  {highlight.detail}
-                </Typography>
-              </Paper>
+              <RevealItem key={highlight.title} sx={{ height: '100%' }}>
+                <Box
+                  sx={{
+                    height: '100%',
+                    bgcolor: 'background.paper',
+                    p: { xs: 2.5, md: 3 },
+                    transition: 'background-color 200ms',
+                    '&:hover': { bgcolor: SURFACE.subtle },
+                  }}
+                >
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                    <StarIcon sx={{ fontSize: 16, color: 'secondary.main' }} />
+                    <Typography variant="subtitle1" component="h3">
+                      {highlight.title}
+                    </Typography>
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    {highlight.detail}
+                  </Typography>
+                </Box>
+              </RevealItem>
             ))}
-          </Box>
+          </RevealGroup>
         </Section>
       </PageContainer>
 

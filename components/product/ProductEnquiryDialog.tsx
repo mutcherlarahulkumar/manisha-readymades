@@ -27,6 +27,7 @@ import { FormTextField } from '@/components/form/fields';
 import { trackEvent } from '@/lib/analytics';
 import { notifyError, notifySuccess } from '@/lib/toast';
 import { INNER_SPACING } from '@/theme/spacing';
+import { RADIUS, SURFACE } from '@/theme/tokens';
 import type { ProductListItem } from '@/types/models';
 import { formatCurrency } from '@/utils/format';
 import { buildProductEnquiryLink } from '@/utils/whatsapp';
@@ -55,23 +56,42 @@ function ChipSelectField({ name, label, options }: ChipSelectFieldProps): JSX.El
 
   return (
     <Box>
-      <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+      <Typography variant="overline" color="text.secondary" component="p" sx={{ mb: 1 }}>
         {label} *
       </Typography>
-      <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
-        {options.map((option) => (
-          <Chip
-            key={option}
-            label={option}
-            clickable
-            color={field.value === option ? 'primary' : 'default'}
-            variant={field.value === option ? 'filled' : 'outlined'}
-            onClick={() => {
-              void setFieldValue(name, option);
-              void setFieldTouched(name, true, false);
-            }}
-          />
-        ))}
+      {/* A radio group in substance, so it is announced as one and is arrow-key
+          navigable, while presenting as the chips that are far quicker to tap. */}
+      <Stack
+        direction="row"
+        role="radiogroup"
+        aria-label={label}
+        sx={{ flexWrap: 'wrap', gap: 1 }}
+      >
+        {options.map((option) => {
+          const isSelected = field.value === option;
+          return (
+            <Chip
+              key={option}
+              label={option}
+              clickable
+              role="radio"
+              aria-checked={isSelected}
+              color={isSelected ? 'primary' : 'default'}
+              variant={isSelected ? 'filled' : 'outlined'}
+              onClick={() => {
+                void setFieldValue(name, option);
+                void setFieldTouched(name, true, false);
+              }}
+              sx={{
+                height: 38,
+                px: 0.5,
+                fontSize: '0.875rem',
+                borderWidth: isSelected ? 1 : 1,
+                transition: 'background-color 160ms, border-color 160ms, color 160ms',
+              }}
+            />
+          );
+        })}
       </Stack>
       {showError && <FormHelperText error>{meta.error}</FormHelperText>}
     </Box>
@@ -157,7 +177,10 @@ export function ProductEnquiryDialog({
           <Form noValidate>
             <DialogContent dividers>
               <Stack spacing={INNER_SPACING}>
-                <Box>
+                {/* The product being enquired about, restated on a tinted
+                    panel so the visitor can confirm at a glance that the
+                    dialog belongs to the item they tapped. */}
+                <Box sx={{ p: 1.5, borderRadius: `${RADIUS.sm}px`, bgcolor: SURFACE.subtle }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                     {product.name}
                   </Typography>
@@ -187,8 +210,23 @@ export function ProductEnquiryDialog({
               </Stack>
             </DialogContent>
 
-            <DialogActions sx={{ p: INNER_SPACING }}>
-              <Button onClick={onClose} disabled={isSubmitting}>
+            {/* On a full-screen phone dialog the actions stack and the primary
+                one spans the width, which is both easier to hit and clearer
+                about which action is the intended one. */}
+            <DialogActions
+              sx={{
+                p: 2,
+                gap: 1,
+                flexDirection: { xs: 'column-reverse', sm: 'row' },
+                '& > :not(style) ~ :not(style)': { ml: { xs: 0, sm: 1 } },
+              }}
+            >
+              <Button
+                onClick={onClose}
+                disabled={isSubmitting}
+                fullWidth={isFullScreen}
+                size={isFullScreen ? 'large' : 'medium'}
+              >
                 Cancel
               </Button>
               <Button
@@ -197,6 +235,8 @@ export function ProductEnquiryDialog({
                 color="success"
                 startIcon={<WhatsAppIcon />}
                 disabled={isSubmitting}
+                fullWidth={isFullScreen}
+                size={isFullScreen ? 'large' : 'medium'}
               >
                 Send on WhatsApp
               </Button>

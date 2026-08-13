@@ -7,19 +7,20 @@
  *
  * @module pages/custom-printing
  */
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 
 import { PageContainer, Section } from '@/components/common/PageContainer';
 import { StoreLayout } from '@/components/layout/StoreLayout';
+import { RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import { QuoteRequestDialog } from '@/components/quote/QuoteRequestDialog';
-import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
+import { RADIUS, SHADOW, SURFACE } from '@/theme/tokens';
 
 /** Services offered. Titles match the options in the quote form. */
 const SERVICES = [
@@ -45,6 +46,14 @@ const SERVICES = [
   },
 ] as const;
 
+/** The four stages of an order, shown as a numbered sequence. */
+const PROCESS_STEPS = [
+  'Fill in the quote form with your design, quantity and size breakdown.',
+  'We receive it on WhatsApp and confirm fabric, print method and rates.',
+  'Approve the sample, and we start production.',
+  'Dispatch, with tracking shared over WhatsApp.',
+] as const;
+
 /**
  * The custom printing landing page.
  *
@@ -67,6 +76,7 @@ export default function CustomPrintingPage(): JSX.Element {
             <Button
               variant="contained"
               color="success"
+              size="large"
               startIcon={<WhatsAppIcon />}
               onClick={() => setQuoteService('')}
             >
@@ -74,48 +84,112 @@ export default function CustomPrintingPage(): JSX.Element {
             </Button>
           }
         >
-          <Box
+          <RevealGroup
             sx={{
               display: 'grid',
-              gap: OUTER_SPACING,
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+              gap: { xs: 2, md: 3 },
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, minmax(0, 1fr))',
+                md: 'repeat(3, minmax(0, 1fr))',
+              },
             }}
           >
             {SERVICES.map((service) => (
-              <Paper key={service.title} variant="outlined" sx={{ p: INNER_SPACING }}>
-                <Stack spacing={INNER_SPACING} sx={{ height: '100%' }}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <CheckCircleIcon color="success" fontSize="small" />
-                    <Typography variant="h6">{service.title}</Typography>
+              <RevealItem key={service.title} sx={{ height: '100%' }}>
+                <Stack
+                  sx={{
+                    height: '100%',
+                    p: { xs: 2.5, md: 3 },
+                    bgcolor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: `${RADIUS.md}px`,
+                    transition:
+                      'transform 260ms cubic-bezier(0.22,1,0.36,1), box-shadow 260ms, border-color 260ms',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: SHADOW.md,
+                      borderColor: SURFACE.borderStrong,
+                    },
+                    '@media (hover: none)': {
+                      '&:hover': { transform: 'none', boxShadow: 'none' },
+                    },
+                    '@media (prefers-reduced-motion: reduce)': {
+                      '&:hover': { transform: 'none' },
+                    },
+                  }}
+                >
+                  <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 1.5 }}>
+                    <CheckCircleIcon color="success" sx={{ fontSize: 20 }} />
+                    <Typography variant="h5" component="h3">
+                      {service.title}
+                    </Typography>
                   </Stack>
-                  <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
+
+                  <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1, mb: 2.5 }}>
                     {service.detail}
                   </Typography>
+
                   <Button
                     variant="outlined"
                     color="success"
-                    startIcon={<WhatsAppIcon />}
+                    endIcon={<ArrowForwardIcon />}
                     onClick={() => setQuoteService(service.title)}
+                    sx={{ alignSelf: 'flex-start' }}
+                    aria-label={`Request quote for ${service.title}`}
                   >
                     Request quote
                   </Button>
                 </Stack>
-              </Paper>
+              </RevealItem>
             ))}
-          </Box>
+          </RevealGroup>
         </Section>
 
         <Section title="How it works">
-          <Stack spacing={INNER_SPACING} component="ol" sx={{ pl: 3, m: 0 }}>
-            <Typography component="li">
-              Fill in the quote form with your design, quantity and size breakdown.
-            </Typography>
-            <Typography component="li">
-              We receive it on WhatsApp and confirm fabric, print method and rates.
-            </Typography>
-            <Typography component="li">Approve the sample, and we start production.</Typography>
-            <Typography component="li">Dispatch, with tracking shared over WhatsApp.</Typography>
-          </Stack>
+          {/*
+            A numbered sequence rather than a plain list. The connecting rule
+            between the markers carries the sense of a process running from top
+            to bottom, which four bullet points do not.
+          */}
+          <RevealGroup component="ol" sx={{ listStyle: 'none', p: 0, m: 0 }}>
+            {PROCESS_STEPS.map((step, index) => {
+              const isLast = index === PROCESS_STEPS.length - 1;
+              return (
+                <RevealItem component="li" key={step} sx={{ display: 'flex', gap: 2.5 }}>
+                  <Stack alignItems="center" sx={{ flexShrink: 0 }}>
+                    <Box
+                      aria-hidden
+                      sx={{
+                        display: 'grid',
+                        placeItems: 'center',
+                        width: 36,
+                        height: 36,
+                        borderRadius: '50%',
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        fontWeight: 700,
+                        fontSize: '0.875rem',
+                      }}
+                    >
+                      {index + 1}
+                    </Box>
+                    {!isLast && (
+                      <Box sx={{ width: '2px', flexGrow: 1, bgcolor: 'divider', my: 0.5 }} />
+                    )}
+                  </Stack>
+
+                  <Typography
+                    variant="body1"
+                    sx={{ pt: 0.75, pb: isLast ? 0 : 4, color: 'text.primary' }}
+                  >
+                    {step}
+                  </Typography>
+                </RevealItem>
+              );
+            })}
+          </RevealGroup>
         </Section>
       </PageContainer>
 

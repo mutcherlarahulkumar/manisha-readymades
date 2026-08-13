@@ -11,6 +11,7 @@ import { serialize } from '@/lib/serialize';
 import { Brand, type BrandDocument } from '@/models/Brand';
 import { Category, type CategoryDocument } from '@/models/Category';
 import { Product } from '@/models/Product';
+import type { PaginationMeta } from '@/types/api';
 import type { Brand as BrandJson, Category as CategoryJson, CategoryWithParent } from '@/types/models';
 import type { BrandFormValues, CategoryFormValues } from '@/validation/taxonomy.schema';
 
@@ -137,6 +138,46 @@ export async function listBrands(options: { activeOnly?: boolean } = {}): Promis
   const filter = options.activeOnly ? { isActive: true } : {};
   const docs = await Brand.find(filter).sort({ name: 1 }).lean();
   return serialize<BrandJson[]>(docs);
+}
+
+/** Largest page size a caller may request, so a hostile query cannot ask for everything. */
+const MAX_BRAND_PAGE_SIZE = 48;
+
+/**
+ * Lists brands alphabetically, one page at a time.
+ *
+ * @param options.activeOnly - Restrict to active brands (storefront).
+ * @param options.page - 1-based page number; values below 1 are clamped.
+ * @param options.limit - Page size, clamped to {@link MAX_BRAND_PAGE_SIZE}.
+ * @returns The requested page and its pagination metadata.
+ *
+ * @remarks
+ * Separate from {@link listBrands} rather than replacing it: the admin
+ * dashboard and the catalogue's filter sidebar both need every brand at once to
+ * populate their controls, and paginating those would be a regression. The
+ * count and the page are fetched concurrently, since neither depends on the
+ * other.
+ */
+export async function listBrandsPaginated(
+  options: { activeOnly?: boolean; page?: number; limit?: number } = {},
+): Promise<{ items: BrandJson[]; meta: PaginationMeta }> {
+  const filter = options.activeOnly ? { isActive: true } : {};
+  const limit = Math.min(Math.max(Math.trunc(options.limit ?? 12), 1), MAX_BRAND_PAGE_SIZE);
+  const page = Math.max(Math.trunc(options.page ?? 1), 1);
+
+  const [docs, total] = await Promise.all([
+    Brand.find(filter)
+      .sort({ name: 1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+    Brand.countDocuments(filter),
+  ]);
+
+  return {
+    items: serialize<BrandJson[]>(docs),
+    meta: { page, limit, total, totalPages: Math.max(Math.ceil(total / limit), 1) },
+  };
 }
 
 /**

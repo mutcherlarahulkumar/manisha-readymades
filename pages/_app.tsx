@@ -6,10 +6,13 @@
 import { CacheProvider, type EmotionCache } from '@emotion/react';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
+import { LazyMotion, domAnimation } from 'framer-motion';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { ToastContainer } from 'react-toastify';
 
+import { RouteProgress } from '@/components/layout/RouteProgress';
+import { PageTransition } from '@/components/motion/PageTransition';
 import { AuthProvider } from '@/hooks/useAuth';
 import { createEmotionCache } from '@/lib/emotionCache';
 import { theme } from '@/theme';
@@ -42,9 +45,22 @@ export default function MyApp({
       </Head>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <AuthProvider>
-          <Component {...pageProps} />
-        </AuthProvider>
+        {/*
+          Only the animation and gesture feature bundles are loaded, which is
+          roughly half of what importing the full `motion` component would pull
+          into the shared chunk. `strict` makes that saving enforceable: it
+          throws if any component reaches for `motion` instead of `m`, so the
+          full bundle cannot creep back in unnoticed. `domAnimation` covers
+          variants, `whileInView` and hover/tap — everything this UI animates.
+        */}
+        <RouteProgress />
+        <LazyMotion features={domAnimation} strict>
+          <AuthProvider>
+            <PageTransition>
+              <Component {...pageProps} />
+            </PageTransition>
+          </AuthProvider>
+        </LazyMotion>
         {/* Position is fixed here and in lib/toast so every toast agrees. */}
         <ToastContainer position="top-left" newestOnTop limit={3} />
       </ThemeProvider>

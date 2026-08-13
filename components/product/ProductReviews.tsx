@@ -22,7 +22,8 @@ import { FormTextField } from '@/components/form/fields';
 import { AsyncState } from '@/components/common/StateViews';
 import { api } from '@/lib/http';
 import { notifyError, notifySuccess } from '@/lib/toast';
-import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
+import { INNER_SPACING } from '@/theme/spacing';
+import { RADIUS } from '@/theme/tokens';
 import type { Review } from '@/types/models';
 import { formatDate } from '@/utils/format';
 import { reviewCreateSchema, type ReviewFormValues } from '@/validation/marketing.schema';
@@ -110,7 +111,7 @@ export function ProductReviews({
 
   return (
     <Box>
-      <Typography variant="h3" component="h2" sx={{ mb: OUTER_SPACING }}>
+      <Typography variant="h2" component="h2" sx={{ mb: { xs: 3, md: 4 } }}>
         Customer reviews
       </Typography>
 
@@ -123,31 +124,51 @@ export function ProductReviews({
           description: 'Be the first to share your experience with this product.',
         }}
       >
-        <Stack spacing={INNER_SPACING} sx={{ mb: OUTER_SPACING }}>
+        {/* Reviews are separated by hairlines rather than boxed individually.
+            A column of outlined cards fragments a page that is already dense
+            with panels; a divided list reads as one continuous body of
+            feedback. */}
+        <Stack
+          divider={<Divider flexItem />}
+          spacing={0}
+          sx={{
+            mb: { xs: 4, md: 6 },
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: `${RADIUS.md}px`,
+            bgcolor: 'background.paper',
+            overflow: 'hidden',
+          }}
+        >
           {reviews.map((review) => (
-            <Paper key={review._id} variant="outlined" sx={{ p: INNER_SPACING }}>
+            <Box key={review._id} sx={{ p: { xs: 2, md: 2.5 } }}>
               <Stack
                 direction="row"
                 justifyContent="space-between"
-                alignItems="center"
+                alignItems="baseline"
                 spacing={INNER_SPACING}
               >
-                <Typography variant="subtitle2">{review.customerName}</Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="subtitle2" sx={{ fontSize: '0.9375rem' }}>
+                  {review.customerName}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
                   {formatDate(review.createdAt)}
                 </Typography>
               </Stack>
-              <Rating value={review.rating} size="small" readOnly sx={{ my: 0.5 }} />
-              <Typography variant="body2">{review.comment}</Typography>
-            </Paper>
+              <Rating value={review.rating} size="small" readOnly sx={{ my: 0.75 }} />
+              <Typography variant="body2" color="text.secondary">
+                {review.comment}
+              </Typography>
+            </Box>
           ))}
         </Stack>
       </AsyncState>
 
-      <Divider sx={{ my: OUTER_SPACING }} />
-
-      <Paper variant="outlined" sx={{ p: INNER_SPACING }}>
-        <Typography variant="h5" component="h3" sx={{ mb: INNER_SPACING }}>
+      <Paper
+        variant="outlined"
+        sx={{ p: { xs: 2, md: 3 }, borderRadius: `${RADIUS.md}px`, maxWidth: 560 }}
+      >
+        <Typography variant="h5" component="h3" sx={{ mb: 2 }}>
           Write a review
         </Typography>
 
@@ -170,10 +191,10 @@ export function ProductReviews({
                   helperText="Text only — please do not include images or contact details."
                 />
                 <Box>
-                  <Button type="submit" variant="contained" disabled={isSubmitting}>
+                  <Button type="submit" variant="contained" size="large" disabled={isSubmitting}>
                     {isSubmitting ? 'Submitting…' : 'Submit review'}
                   </Button>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
                     Reviews appear once they have been approved.
                   </Typography>
                 </Box>
