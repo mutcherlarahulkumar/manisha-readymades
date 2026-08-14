@@ -22,6 +22,7 @@ import { RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import { connectToDatabase } from '@/lib/mongodb';
 import { listBanners } from '@/services/marketing.service';
 import { listCategories } from '@/services/taxonomy.service';
+import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
 import { RADIUS, SHADOW, SURFACE } from '@/theme/tokens';
 import type { Banner, CategoryWithParent } from '@/types/models';
 
@@ -67,7 +68,7 @@ export default function CategoriesPage({ categories, banners }: CategoriesPagePr
             <RevealGroup
               sx={{
                 display: 'grid',
-                gap: { xs: 1.5, md: 3 },
+                gap: OUTER_SPACING,
                 gridTemplateColumns: {
                   xs: 'repeat(2, minmax(0, 1fr))',
                   sm: 'repeat(3, minmax(0, 1fr))',
@@ -143,7 +144,7 @@ export default function CategoriesPage({ categories, banners }: CategoriesPagePr
                           )}
                         </Box>
 
-                        <Box sx={{ p: 2, pb: children.length > 0 ? 1 : 2 }}>
+                        <Box sx={{ p: INNER_SPACING }}>
                           <Stack direction="row" alignItems="center" spacing={0.75}>
                             <Typography variant="h6" component="h3">
                               {parent.name}
@@ -175,7 +176,7 @@ export default function CategoriesPage({ categories, banners }: CategoriesPagePr
                         shows the tree, so linking them directly saves a step.
                       */}
                       {children.length > 0 && (
-                        <Box sx={{ px: 2, pb: 2, mt: 'auto' }}>
+                        <Box sx={{ px: INNER_SPACING, pb: INNER_SPACING, mt: 'auto' }}>
                           <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75 }}>
                             {children.map((child) => (
                               <Box

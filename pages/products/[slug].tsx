@@ -147,7 +147,11 @@ export default function ProductDetailPage({
             >
               <Box
                 sx={{
-                  aspectRatio: '3 / 4',
+                  // Square on phones, where the gallery is full-bleed and a
+                  // 3:4 frame filled most of the screen before any detail was
+                  // visible. The taller ratio is kept on desktop, where the
+                  // image shares the row with the specification column.
+                  aspectRatio: { xs: '1 / 1', md: '3 / 4' },
                   bgcolor: SURFACE.subtle,
                   borderRadius: `${RADIUS.md}px`,
                   overflow: 'hidden',

@@ -10,7 +10,7 @@ import Typography from '@mui/material/Typography';
 import NextLink from 'next/link';
 import type { ReactNode } from 'react';
 
-import { OUTER_SPACING } from '@/theme/spacing';
+import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
 import { RADIUS, SHADOW } from '@/theme/tokens';
 
 /** Props for {@link StatCard}. */
@@ -94,7 +94,7 @@ export function StatCard({
       variant="outlined"
       sx={{
         display: 'flex',
-        p: { xs: 2, md: 2.5 },
+        p: INNER_SPACING,
         height: '100%',
         borderRadius: `${RADIUS.md}px`,
         // A colour accent along the top edge keeps the category cue without

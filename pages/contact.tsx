@@ -18,6 +18,7 @@ import { BrandLockup } from '@/components/layout/BrandLockup';
 import { StoreLayout } from '@/components/layout/StoreLayout';
 import { Reveal, RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import { publicEnv } from '@/lib/env';
+import { INNER_SPACING, OUTER_SPACING, SECTION_SPACING } from '@/theme/spacing';
 import { RADIUS, SHADOW, SURFACE } from '@/theme/tokens';
 import { buildGeneralEnquiryLink } from '@/utils/whatsapp';
 
@@ -59,7 +60,7 @@ function ContactMethod({
         gap: 2,
         // A generous target: this is the page's entire purpose, and most
         // visitors reach it on a phone.
-        p: { xs: 2.5, md: 3 },
+        p: INNER_SPACING,
         borderRadius: `${RADIUS.md}px`,
         textDecoration: 'none',
         border: '1px solid',
@@ -145,7 +146,7 @@ export default function ContactPage(): JSX.Element {
           <Box
             sx={{
               display: 'grid',
-              gap: { xs: 5, md: 6 },
+              gap: SECTION_SPACING,
               gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(0, 0.85fr)' },
               alignItems: 'center',
             }}
@@ -190,8 +191,8 @@ export default function ContactPage(): JSX.Element {
               <Reveal delay={0.1}>
                 <Stack
                   sx={{
-                    mt: 3,
-                    p: 2.5,
+                    mt: OUTER_SPACING,
+                    p: INNER_SPACING,
                     borderRadius: `${RADIUS.md}px`,
                     bgcolor: SURFACE.subtle,
                   }}
@@ -210,7 +211,7 @@ export default function ContactPage(): JSX.Element {
                 justifyContent="center"
                 spacing={2.5}
                 sx={{
-                  p: { xs: 4, md: 6 },
+                  p: OUTER_SPACING,
                   borderRadius: `${RADIUS.lg}px`,
                   bgcolor: SURFACE.subtle,
                   border: '1px solid',

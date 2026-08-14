@@ -37,7 +37,7 @@ export function FormPanel({ title, description, children }: FormPanelProps): JSX
     <Paper variant="outlined" sx={{ mb: OUTER_SPACING, borderRadius: `${RADIUS.md}px` }}>
       {/* The header sits on a tinted band so a long form reads as a stack of
           labelled groups when scrolled past quickly. */}
-      <Box sx={{ p: 2, bgcolor: SURFACE.subtle, borderRadius: `${RADIUS.md}px ${RADIUS.md}px 0 0` }}>
+      <Box sx={{ px: OUTER_SPACING, py: INNER_SPACING, bgcolor: SURFACE.subtle, borderRadius: `${RADIUS.md}px ${RADIUS.md}px 0 0` }}>
         <Typography variant="h5" component="h3">
           {title}
         </Typography>
@@ -48,7 +48,7 @@ export function FormPanel({ title, description, children }: FormPanelProps): JSX
         )}
       </Box>
       <Divider />
-      <Stack spacing={2} sx={{ p: { xs: 2, md: 2.5 } }}>
+      <Stack spacing={INNER_SPACING} sx={{ p: OUTER_SPACING }}>
         {children}
       </Stack>
     </Paper>
@@ -102,7 +102,7 @@ export function FormActions({ children }: FormActionsProps): JSX.Element {
         position: 'sticky',
         bottom: 0,
         zIndex: 2,
-        p: 2,
+        p: OUTER_SPACING,
         borderRadius: 0,
         // Full-bleed against the page gutters, so the bar reads as chrome
         // pinned to the viewport rather than as another panel in the form.

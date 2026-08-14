@@ -328,7 +328,7 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
                 gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
                 gap: { xs: 4, md: 6 },
                 alignItems: 'center',
-                p: { xs: 3, md: 5 },
+                p: OUTER_SPACING,
                 borderRadius: `${RADIUS.lg}px`,
                 bgcolor: SURFACE.subtle,
               }}
@@ -398,7 +398,7 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
                   sx={{
                     height: '100%',
                     bgcolor: 'background.paper',
-                    p: { xs: 2.5, md: 3 },
+                    p: INNER_SPACING,
                     transition: 'background-color 200ms',
                     '&:hover': { bgcolor: SURFACE.subtle },
                   }}

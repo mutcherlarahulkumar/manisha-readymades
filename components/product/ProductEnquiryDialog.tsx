@@ -7,11 +7,13 @@
  *
  * @module components/product/ProductEnquiryDialog
  */
+import CloseIcon from '@mui/icons-material/Close';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
+import IconButton from '@mui/material/IconButton';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -26,7 +28,7 @@ import { useMemo } from 'react';
 import { FormTextField } from '@/components/form/fields';
 import { trackEvent } from '@/lib/analytics';
 import { notifyError, notifySuccess } from '@/lib/toast';
-import { INNER_SPACING } from '@/theme/spacing';
+import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
 import { RADIUS, SURFACE } from '@/theme/tokens';
 import type { ProductListItem } from '@/types/models';
 import { formatCurrency } from '@/utils/format';
@@ -117,7 +119,8 @@ export function ProductEnquiryDialog({
   product,
 }: ProductEnquiryDialogProps): JSX.Element {
   const theme = useTheme();
-  const isFullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  // Drives the action buttons' size and stacking, not a full-screen dialog.
+  const isCompact = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Constrained to this product's own variants, so an unstocked combination
   // cannot be requested.
@@ -164,8 +167,43 @@ export function ProductEnquiryDialog({
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth fullScreen={isFullScreen}>
-      <DialogTitle>Enquire about this product</DialogTitle>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{
+        sx: {
+          display: 'flex',
+          flexDirection: 'column',
+          // Deliberately not `fullScreen` on phones. This form is five short
+          // controls; filling the screen with it left a large empty band
+          // between the last field and the buttons. A dialog that hugs its
+          // content has no dead space to explain.
+          m: 2,
+          width: 'calc(100% - 32px)',
+          maxHeight: 'calc(100% - 32px)',
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
+      >
+        <Box component="span" sx={{ minWidth: 0 }}>
+          Enquire about this product
+        </Box>
+        {/* A dialog that fills a phone screen has no visible backdrop to tap,
+            so without this the only way out is the browser's back gesture. */}
+        <IconButton
+          onClick={onClose}
+          aria-label="Close"
+          edge="end"
+          sx={{ flexShrink: 0, mr: -0.5 }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+
 
       <Formik
         initialValues={initialValues}
@@ -174,13 +212,13 @@ export function ProductEnquiryDialog({
         enableReinitialize
       >
         {({ isSubmitting }) => (
-          <Form noValidate>
+          <Form noValidate style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <DialogContent dividers>
-              <Stack spacing={INNER_SPACING}>
+              <Stack spacing={OUTER_SPACING}>
                 {/* The product being enquired about, restated on a tinted
                     panel so the visitor can confirm at a glance that the
                     dialog belongs to the item they tapped. */}
-                <Box sx={{ p: 1.5, borderRadius: `${RADIUS.sm}px`, bgcolor: SURFACE.subtle }}>
+                <Box sx={{ p: INNER_SPACING, borderRadius: `${RADIUS.sm}px`, bgcolor: SURFACE.subtle }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                     {product.name}
                   </Typography>
@@ -215,7 +253,6 @@ export function ProductEnquiryDialog({
                 about which action is the intended one. */}
             <DialogActions
               sx={{
-                p: 2,
                 gap: 1,
                 flexDirection: { xs: 'column-reverse', sm: 'row' },
                 '& > :not(style) ~ :not(style)': { ml: { xs: 0, sm: 1 } },
@@ -224,8 +261,8 @@ export function ProductEnquiryDialog({
               <Button
                 onClick={onClose}
                 disabled={isSubmitting}
-                fullWidth={isFullScreen}
-                size={isFullScreen ? 'large' : 'medium'}
+                fullWidth={isCompact}
+                size={isCompact ? 'large' : 'medium'}
               >
                 Cancel
               </Button>
@@ -235,8 +272,8 @@ export function ProductEnquiryDialog({
                 color="success"
                 startIcon={<WhatsAppIcon />}
                 disabled={isSubmitting}
-                fullWidth={isFullScreen}
-                size={isFullScreen ? 'large' : 'medium'}
+                fullWidth={isCompact}
+                size={isCompact ? 'large' : 'medium'}
               >
                 Send on WhatsApp
               </Button>

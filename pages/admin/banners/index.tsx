@@ -30,6 +30,7 @@ import { AdminLayout } from '@/components/layout/AdminLayout';
 import { useResource } from '@/hooks/useResource';
 import { api } from '@/lib/http';
 import { notifyError, notifySuccess } from '@/lib/toast';
+import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
 import { RADIUS, SURFACE } from '@/theme/tokens';
 import type { Banner, BannerPosition } from '@/types/models';
 import { bannerSchema, type BannerFormValues } from '@/validation/marketing.schema';
@@ -136,7 +137,7 @@ export default function AdminBannersPage(): JSX.Element {
                   direction="row"
                   spacing={2}
                   alignItems="flex-start"
-                  sx={{ p: 2, bgcolor: SURFACE.subtle }}
+                  sx={{ px: OUTER_SPACING, py: INNER_SPACING, bgcolor: SURFACE.subtle }}
                 >
                   <Box
                     aria-hidden
@@ -182,7 +183,7 @@ export default function AdminBannersPage(): JSX.Element {
                 >
                   {({ isSubmitting }) => (
                     <Form noValidate>
-                      <Stack spacing={2} sx={{ p: { xs: 2, md: 2.5 } }}>
+                      <Stack spacing={INNER_SPACING} sx={{ p: OUTER_SPACING }}>
                         <FormTextField
                           name="title"
                           label={isTop ? 'Announcement text' : 'Headline'}
