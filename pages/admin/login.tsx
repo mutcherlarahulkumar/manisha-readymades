@@ -70,7 +70,7 @@ export default function AdminLoginPage(): JSX.Element {
       <Paper
         variant="outlined"
         sx={{
-          p: { xs: 3, sm: 4 },
+          p: OUTER_SPACING,
           width: '100%',
           maxWidth: 420,
           borderRadius: `${RADIUS.lg}px`,

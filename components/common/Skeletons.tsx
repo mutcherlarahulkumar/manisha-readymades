@@ -12,13 +12,13 @@ import Box from '@mui/material/Box';
 import Skeleton from '@mui/material/Skeleton';
 import type { SxProps, Theme } from '@mui/material/styles';
 
-import { INNER_SPACING } from '@/theme/spacing';
+import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
 import { RADIUS } from '@/theme/tokens';
 
 /** Grid template shared by the tile grids, matching the real layouts. */
 const TILE_GRID_SX: SxProps<Theme> = {
   display: 'grid',
-  gap: { xs: 1.5, md: 3 },
+  gap: OUTER_SPACING,
   gridTemplateColumns: {
     xs: 'repeat(2, minmax(0, 1fr))',
     sm: 'repeat(3, minmax(0, 1fr))',

@@ -50,7 +50,7 @@ export function LoadingState({
       <Box
         sx={{
           display: 'grid',
-          gap: { xs: 1.5, md: 3 },
+          gap: OUTER_SPACING,
           gridTemplateColumns: {
             xs: 'repeat(2, minmax(0, 1fr))',
             sm: 'repeat(3, minmax(0, 1fr))',
@@ -71,7 +71,7 @@ export function LoadingState({
               bgcolor: 'background.paper',
             }}
           >
-            <Skeleton variant="rectangular" sx={{ aspectRatio: '4 / 5', borderRadius: 0 }} />
+            <Skeleton variant="rectangular" sx={{ aspectRatio: '1 / 1', borderRadius: 0 }} />
             <Box sx={{ p: INNER_SPACING }}>
               <Skeleton width="45%" height={12} />
               <Skeleton width="90%" height={16} sx={{ mt: 0.75 }} />

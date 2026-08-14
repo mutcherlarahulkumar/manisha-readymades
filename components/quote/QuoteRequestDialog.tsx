@@ -7,10 +7,13 @@
  *
  * @module components/quote/QuoteRequestDialog
  */
+import CloseIcon from '@mui/icons-material/Close';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
+import IconButton from '@mui/material/IconButton';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -29,7 +32,7 @@ import {
 } from '@/components/form/fields';
 import { FormRow } from '@/components/form/FormLayout';
 import { notifyError, notifySuccess } from '@/lib/toast';
-import { INNER_SPACING } from '@/theme/spacing';
+import { OUTER_SPACING } from '@/theme/spacing';
 import { SIZES } from '@/types/models';
 import { buildQuoteRequestLink } from '@/utils/whatsapp';
 import { QUOTE_SERVICES, quoteSchema, type QuoteFormValues } from '@/validation/quote.schema';
@@ -108,8 +111,32 @@ export function QuoteRequestDialog({
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isFullScreen}>
-      <DialogTitle>Request a printing quote</DialogTitle>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      fullScreen={isFullScreen}
+      PaperProps={{ sx: { display: 'flex', flexDirection: 'column' } }}
+    >
+      <DialogTitle
+        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
+      >
+        <Box component="span" sx={{ minWidth: 0 }}>
+          Request a printing quote
+        </Box>
+        {/* A dialog that fills a phone screen has no visible backdrop to tap,
+            so without this the only way out is the browser's back gesture. */}
+        <IconButton
+          onClick={onClose}
+          aria-label="Close"
+          edge="end"
+          sx={{ flexShrink: 0, mr: -0.5 }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+
 
       <Formik
         initialValues={initialValues}
@@ -118,13 +145,16 @@ export function QuoteRequestDialog({
         enableReinitialize
       >
         {({ isSubmitting }) => (
-          <Form noValidate>
-            <DialogContent dividers>
-              <Alert severity="info" sx={{ mb: INNER_SPACING }}>
+          <Form
+            noValidate
+            style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
+          >
+            <DialogContent dividers sx={{ flex: 1 }}>
+              <Alert severity="info" sx={{ mb: OUTER_SPACING }}>
                 Fill in the details below and we will open WhatsApp with your brief ready to send.
               </Alert>
 
-              <Stack spacing={INNER_SPACING}>
+              <Stack spacing={OUTER_SPACING}>
                 <FormSelectField
                   name="service"
                   label="Service"
@@ -205,7 +235,6 @@ export function QuoteRequestDialog({
                 full-screen phone dialog, side by side on desktop. */}
             <DialogActions
               sx={{
-                p: 2,
                 gap: 1,
                 flexDirection: { xs: 'column-reverse', sm: 'row' },
                 '& > :not(style) ~ :not(style)': { ml: { xs: 0, sm: 1 } },

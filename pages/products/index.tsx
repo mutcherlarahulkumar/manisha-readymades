@@ -34,7 +34,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { listBanners } from '@/services/marketing.service';
 import { listProducts } from '@/services/product.service';
 import { listBrands, listCategories } from '@/services/taxonomy.service';
-import { OUTER_SPACING } from '@/theme/spacing';
+import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
 import { RADIUS, stickyContentTop } from '@/theme/tokens';
 import type { PaginationMeta } from '@/types/api';
 import type { Banner, Brand, CategoryWithParent, ProductListItem } from '@/types/models';
@@ -345,7 +345,7 @@ export default function ProductsPage({
             direction="row"
             alignItems="center"
             justifyContent="space-between"
-            sx={{ p: 2, flexShrink: 0 }}
+            sx={{ p: INNER_SPACING, flexShrink: 0 }}
           >
             <Typography variant="h6" component="h2">
               Filters
@@ -356,9 +356,9 @@ export default function ProductsPage({
           </Stack>
           <Divider />
 
-          <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>{filterPanel}</Box>
+          <Box sx={{ flexGrow: 1, overflowY: 'auto', p: INNER_SPACING }}>{filterPanel}</Box>
 
-          <Box sx={{ p: 2, flexShrink: 0, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ p: INNER_SPACING, flexShrink: 0, borderTop: '1px solid', borderColor: 'divider' }}>
             <Button
               fullWidth
               size="large"

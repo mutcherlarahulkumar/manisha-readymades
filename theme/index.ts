@@ -246,6 +246,12 @@ export const theme: Theme = createTheme({
     MuiDialogTitle: {
       styleOverrides: {
         root: {
+          // Dialogs take the outer step, not the inner one. A dialog is a small
+          // page, not a row inside one: at 8px its content sits hard against
+          // the edge and every field looks squeezed.
+          paddingLeft: SPACING_PX.outer.mobile,
+          paddingRight: SPACING_PX.outer.mobile,
+          paddingTop: SPACING_PX.outer.mobile,
           paddingBottom: SPACING_PX.inner.mobile,
           fontSize: '1.125rem',
           fontWeight: 700,
@@ -256,8 +262,16 @@ export const theme: Theme = createTheme({
     MuiDialogContent: {
       styleOverrides: {
         root: ({ theme: t }) => ({
-          padding: SPACING_PX.inner.mobile,
-          [t.breakpoints.up('md')]: { padding: SPACING_PX.inner.desktop },
+          padding: SPACING_PX.outer.mobile,
+          [t.breakpoints.up('md')]: { padding: SPACING_PX.outer.desktop },
+        }),
+      },
+    },
+    MuiDialogActions: {
+      styleOverrides: {
+        root: ({ theme: t }) => ({
+          padding: SPACING_PX.outer.mobile,
+          [t.breakpoints.up('md')]: { padding: SPACING_PX.outer.desktop },
         }),
       },
     },

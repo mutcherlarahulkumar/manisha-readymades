@@ -4,7 +4,7 @@
  * @module components/layout/BrandLogo
  */
 import Box from '@mui/material/Box';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * Path to the brand artwork.
@@ -47,11 +47,28 @@ interface BrandLogoProps {
  */
 export function BrandLogo({ size = 36, inverse = false }: BrandLogoProps): JSX.Element {
   const [hasArtwork, setHasArtwork] = useState(true);
+  const imageRef = useRef<HTMLImageElement>(null);
+
+  /*
+   * Detects a missing file even when it failed before React was listening.
+   *
+   * The page is server-rendered, so the browser requests this image while
+   * parsing the initial HTML — well before hydration attaches `onError`. A
+   * 404 therefore fires its error event into a void, and the broken-image
+   * icon stays on screen. Re-checking after mount catches exactly that case:
+   * a request that has finished (`complete`) but produced no pixels
+   * (`naturalWidth === 0`) is a failure, whenever it happened.
+   */
+  useEffect(() => {
+    const image = imageRef.current;
+    if (image && image.complete && image.naturalWidth === 0) setHasArtwork(false);
+  }, []);
 
   if (hasArtwork) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- A local static asset; next/image would add a loader for no benefit at this size.
       <img
+        ref={imageRef}
         src={LOGO_SRC}
         alt=""
         aria-hidden

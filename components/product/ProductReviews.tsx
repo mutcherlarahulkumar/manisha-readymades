@@ -22,7 +22,7 @@ import { FormTextField } from '@/components/form/fields';
 import { AsyncState } from '@/components/common/StateViews';
 import { api } from '@/lib/http';
 import { notifyError, notifySuccess } from '@/lib/toast';
-import { INNER_SPACING } from '@/theme/spacing';
+import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
 import { RADIUS } from '@/theme/tokens';
 import type { Review } from '@/types/models';
 import { formatDate } from '@/utils/format';
@@ -141,7 +141,7 @@ export function ProductReviews({
           }}
         >
           {reviews.map((review) => (
-            <Box key={review._id} sx={{ p: { xs: 2, md: 2.5 } }}>
+            <Box key={review._id} sx={{ p: INNER_SPACING }}>
               <Stack
                 direction="row"
                 justifyContent="space-between"
@@ -166,7 +166,7 @@ export function ProductReviews({
 
       <Paper
         variant="outlined"
-        sx={{ p: { xs: 2, md: 3 }, borderRadius: `${RADIUS.md}px`, maxWidth: 560 }}
+        sx={{ p: OUTER_SPACING, borderRadius: `${RADIUS.md}px` }}
       >
         <Typography variant="h5" component="h3" sx={{ mb: 2 }}>
           Write a review

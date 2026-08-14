@@ -20,6 +20,7 @@ import { PageContainer, Section } from '@/components/common/PageContainer';
 import { StoreLayout } from '@/components/layout/StoreLayout';
 import { RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import { QuoteRequestDialog } from '@/components/quote/QuoteRequestDialog';
+import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
 import { RADIUS, SHADOW, SURFACE } from '@/theme/tokens';
 
 /** Services offered. Titles match the options in the quote form. */
@@ -87,7 +88,7 @@ export default function CustomPrintingPage(): JSX.Element {
           <RevealGroup
             sx={{
               display: 'grid',
-              gap: { xs: 2, md: 3 },
+              gap: OUTER_SPACING,
               gridTemplateColumns: {
                 xs: '1fr',
                 sm: 'repeat(2, minmax(0, 1fr))',
@@ -100,7 +101,7 @@ export default function CustomPrintingPage(): JSX.Element {
                 <Stack
                   sx={{
                     height: '100%',
-                    p: { xs: 2.5, md: 3 },
+                    p: INNER_SPACING,
                     bgcolor: 'background.paper',
                     border: '1px solid',
                     borderColor: 'divider',

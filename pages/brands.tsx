@@ -22,6 +22,7 @@ import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { connectToDatabase } from '@/lib/mongodb';
 import { listBanners } from '@/services/marketing.service';
 import { listBrandsPaginated, listCategories } from '@/services/taxonomy.service';
+import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
 import { RADIUS, SHADOW, SURFACE } from '@/theme/tokens';
 import type { PaginationMeta } from '@/types/api';
 import type { Banner, Brand, CategoryWithParent } from '@/types/models';
@@ -80,7 +81,7 @@ export default function BrandsPage({
               <Box
                 sx={{
                   display: 'grid',
-                  gap: { xs: 1.5, md: 3 },
+                  gap: OUTER_SPACING,
                   gridTemplateColumns: {
                     xs: 'repeat(2, minmax(0, 1fr))',
                     sm: 'repeat(3, minmax(0, 1fr))',
@@ -193,7 +194,7 @@ function BrandCard({ brand }: BrandCardProps): JSX.Element {
           display: 'grid',
           placeItems: 'center',
           aspectRatio: '3 / 2',
-          p: 2,
+          p: INNER_SPACING,
           bgcolor: SURFACE.subtle,
         }}
       >
@@ -225,7 +226,7 @@ function BrandCard({ brand }: BrandCardProps): JSX.Element {
         )}
       </Box>
 
-      <Box sx={{ p: 2, flexGrow: 1 }}>
+      <Box sx={{ p: INNER_SPACING, flexGrow: 1 }}>
         <Stack direction="row" alignItems="center" spacing={0.75}>
           <Typography variant="subtitle1" component="h3" sx={{ minWidth: 0 }} noWrap>
             {brand.name}

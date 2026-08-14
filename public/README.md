@@ -20,3 +20,17 @@ Two notes on the artwork:
 
 If the file is named `logo.svg` rather than `logo.png`, update `LOGO_SRC` at the
 top of `components/layout/BrandLogo.tsx`.
+
+## `logo-full.png` (or `logo-full.svg`)
+
+The **complete lockup** — the mark together with the "Manisha Readymades"
+wordmark beneath it. This is the version shown large on the Contact page, where
+the brand is the subject rather than a label on navigation.
+
+Unlike `logo.png`, this one *should* include the wordmark: nothing else nearby
+sets the name.
+
+Until it exists, `components/layout/BrandLockup` composes a stand-in from the
+monogram and the brand name in type, so the space is never empty.
+
+To use `.svg`, update `LOCKUP_SRC` at the top of that component.

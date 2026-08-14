@@ -15,9 +15,10 @@ import Typography from '@mui/material/Typography';
 import NextLink from 'next/link';
 import { useState } from 'react';
 
+import { ShareButton } from '@/components/common/ShareButton';
 import { RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import { ProductEnquiryDialog } from '@/components/product/ProductEnquiryDialog';
-import { INNER_SPACING } from '@/theme/spacing';
+import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
 import { RADIUS, SHADOW, SURFACE } from '@/theme/tokens';
 import type { ProductListItem } from '@/types/models';
 import { formatCurrency } from '@/utils/format';
@@ -78,10 +79,11 @@ export function ProductCard({ product }: ProductCardProps): JSX.Element {
         <Box
           sx={{
             position: 'relative',
-            // 4:5 rather than 3:4. Garment photography still reads clearly at
-            // this ratio, and the shorter card puts appreciably more of the
-            // grid above the fold.
-            aspectRatio: '4 / 5',
+            // Square. Garment photography still reads at this ratio, and it is
+            // the shortest the card can go before the product stops being the
+            // dominant element of it — appreciably more of the grid now lands
+            // above the fold.
+            aspectRatio: '1 / 1',
             bgcolor: SURFACE.subtle,
             overflow: 'hidden',
           }}
@@ -157,16 +159,18 @@ export function ProductCard({ product }: ProductCardProps): JSX.Element {
         </Box>
       </CardActionArea>
 
-      <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-        {product.brand && (
-          <Typography
-            variant="overline"
-            color="text.secondary"
-            sx={{ fontSize: '0.625rem', lineHeight: 1.4 }}
-          >
-            {product.brand.name}
-          </Typography>
-        )}
+      <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+        {/* Brand and SKU share one line. The SKU matters in a wholesale
+            catalogue — buyers quote it back when ordering, and the header search
+            accepts it — but it does not warrant a row of its own. */}
+        <Typography
+          variant="overline"
+          color="text.secondary"
+          noWrap
+          sx={{ fontSize: '0.625rem', lineHeight: 1.4 }}
+        >
+          {product.brand ? `${product.brand.name} · ${product.sku}` : product.sku}
+        </Typography>
 
         {/* Clamped to two lines rather than truncated by character count, so
             every card in a row is the same height and the price line below sits
@@ -185,14 +189,9 @@ export function ProductCard({ product }: ProductCardProps): JSX.Element {
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
-            minHeight: '2.8em',
           }}
         >
           {product.name}
-        </Typography>
-
-        <Typography variant="caption" color="text.secondary" noWrap>
-          {product.sku}
         </Typography>
 
         <Stack direction="row" spacing={0.75} alignItems="baseline" sx={{ flexWrap: 'wrap', mt: 0.25 }}>
@@ -242,7 +241,7 @@ export function ProductCard({ product }: ProductCardProps): JSX.Element {
         )}
       </CardContent>
 
-      <Box sx={{ p: INNER_SPACING, pt: 0 }}>
+      <Stack direction="row" spacing={1} sx={{ p: INNER_SPACING, pt: 0 }}>
         {/* Opens the variant picker: the enquiry must name a size and colour. */}
         <Button
           fullWidth
@@ -252,10 +251,15 @@ export function ProductCard({ product }: ProductCardProps): JSX.Element {
           startIcon={<WhatsAppIcon />}
           onClick={() => setIsEnquiryOpen(true)}
           aria-label={`Enquire about ${product.name} on WhatsApp`}
+          sx={{ minWidth: 0 }}
         >
-          Enquire on WhatsApp
+          Enquire
         </Button>
-      </Box>
+
+        {/* Sharing a product from the grid, without opening it first, is how a
+            wholesale buyer actually passes stock on to a colleague. */}
+        <ShareButton title={product.name} url={`/products/${product.slug}`} compact />
+      </Stack>
 
       {isEnquiryOpen && (
         <ProductEnquiryDialog
@@ -292,7 +296,7 @@ export function ProductGrid({ products }: ProductGridProps): JSX.Element {
         display: 'grid',
         // A tighter gutter on phones: at two columns, the 24px desktop gap eats
         // width the product photography needs more than the layout does.
-        gap: { xs: 1.5, md: 3 },
+        gap: OUTER_SPACING,
         gridTemplateColumns: {
           xs: 'repeat(2, minmax(0, 1fr))',
           sm: 'repeat(3, minmax(0, 1fr))',

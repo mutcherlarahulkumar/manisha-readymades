@@ -18,7 +18,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-import { INNER_SPACING } from '@/theme/spacing';
+import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
 import { RADIUS, SURFACE } from '@/theme/tokens';
 import { SIZES, type Brand, type CategoryWithParent } from '@/types/models';
 
@@ -117,7 +117,7 @@ export function ProductFilters({
       component="aside"
       aria-label="Product filters"
       sx={{
-        p: { xs: 2, md: 2.5 },
+        p: OUTER_SPACING,
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
