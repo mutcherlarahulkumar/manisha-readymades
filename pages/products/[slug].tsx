@@ -95,10 +95,9 @@ export default function ProductDetailPage({
       title={product.name}
       description={product.description ?? undefined}
       categories={categories}
+      mobileBottomInset={MOBILE_CTA_HEIGHT}
     >
-      {/* The page reserves room for the fixed mobile enquiry bar so the last
-          element on the page is never trapped underneath it. */}
-      <Box sx={{ pb: { xs: `${MOBILE_CTA_HEIGHT}px`, md: 0 } }}>
+      <Box>
         <PageContainer>
           <Breadcrumbs
             sx={{

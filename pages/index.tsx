@@ -23,6 +23,7 @@ import { useState } from 'react';
 
 import { EmptyState } from '@/components/common/StateViews';
 import { PageContainer, Section } from '@/components/common/PageContainer';
+import { BrandLogo } from '@/components/layout/BrandLogo';
 import { StoreLayout } from '@/components/layout/StoreLayout';
 import { Reveal, RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import { ProductGrid } from '@/components/product/ProductCard';
@@ -47,6 +48,16 @@ const HIGHLIGHTS = [
   { title: 'Bulk orders', detail: 'Large quantities handled end to end.' },
   { title: 'Trusted by retailers', detail: 'Repeat buyers from shops and boutiques.' },
 ] as const;
+
+/**
+ * Caption shown beside the brand when no hero banner has been set.
+ *
+ * @remarks
+ * Kept as a single constant so the wording can be changed in one place. Note
+ * the town is spelled "Vizianagaram" here, which is the standard spelling; the
+ * supplied logo artwork reads "VIZINAGAREAM". Worth settling on one.
+ */
+const HERO_BRAND_CAPTION = 'The best clothing store in Vizianagaram.';
 
 /** Custom printing services offered. */
 const PRINTING_SERVICES = [
@@ -80,17 +91,14 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
   const heroStagger = prefersReducedMotion ? undefined : staggerContainer(0.08, 0.1);
 
   /*
-   * The hero's picture.
+   * The hero's picture, when the admin has set one.
    *
-   * An admin-uploaded hero banner is always preferred. When none is set the
-   * first featured product's photograph stands in, so the panel is never a
-   * block of flat navy with text floating in it — which is what an unconfigured
-   * store used to look like. The fallback is real catalogue imagery rather than
-   * a decorative placeholder, so it says something true about the shop, and it
-   * disappears the moment a proper banner is uploaded.
+   * With no banner the panel shows the brand instead of borrowing a product
+   * photograph. A product standing in for the shop's own hero was misleading:
+   * it read as a featured item rather than as a placeholder, and it changed
+   * every time the catalogue did.
    */
-  const heroImage =
-    heroBanner?.image ?? featured.find((product) => product.images[0])?.images[0] ?? null;
+  const heroImage = heroBanner?.image ?? null;
 
   return (
     <StoreLayout topBanners={topBanners} categories={categories}>
@@ -122,7 +130,7 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
               // The type column is the wider of the two. A near-even split
               // makes the headline wrap early while the photograph has more
               // room than it needs.
-              gridTemplateColumns: { xs: '1fr', md: heroImage ? '1.15fr 0.85fr' : '1fr' },
+              gridTemplateColumns: { xs: '1fr', md: '1.15fr 0.85fr' },
               alignItems: 'stretch',
               minHeight: { xs: 'auto', md: 400 },
             }}
@@ -144,18 +152,20 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
                 animate={prefersReducedMotion ? undefined : 'visible'}
                 style={{ width: '100%' }}
               >
-                <m.div variants={prefersReducedMotion ? undefined : heroRise}>
-                  <Typography
-                    variant="overline"
-                    sx={{
-                      color: 'secondary.light',
-                      display: 'block',
-                      mb: { xs: 1.5, md: 2 },
-                    }}
-                  >
-                    Manisha Readymades
-                  </Typography>
-                </m.div>
+                {heroImage && (
+                  <m.div variants={prefersReducedMotion ? undefined : heroRise}>
+                    <Typography
+                      variant="overline"
+                      sx={{
+                        color: 'secondary.light',
+                        display: 'block',
+                        mb: { xs: 1.5, md: 2 },
+                      }}
+                    >
+                      Manisha Readymades
+                    </Typography>
+                  </m.div>
+                )}
 
                 <m.div variants={prefersReducedMotion ? undefined : heroRise}>
                   <Typography
@@ -220,6 +230,76 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
                 </m.div>
               </m.div>
             </Box>
+
+            {!heroImage && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 2,
+                  px: OUTER_SPACING,
+                  // Lighter below on mobile, where the text block underneath
+                  // brings its own top padding and the two stacked together
+                  // opened a gap wider than the brand block itself.
+                  pt: { xs: 4, md: 6 },
+                  pb: { xs: 0, md: 6 },
+                  order: { xs: -1, md: 0 },
+                  textAlign: 'center',
+                }}
+              >
+                <m.div
+                  initial={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.94 }}
+                  animate={prefersReducedMotion ? undefined : { opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.7, ease: EASE.emphasised, delay: 0.15 }}
+                >
+                  {/*
+                    The mark sits on a white tile. The artwork may itself have a
+                    white ground, and dropping that straight onto the navy would
+                    show as a pale rectangle; giving it a deliberate tile makes
+                    the same result look intended, and works for a transparent
+                    file too.
+                  */}
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      placeItems: 'center',
+                      p: INNER_SPACING,
+                      bgcolor: 'common.white',
+                      borderRadius: `${RADIUS.lg}px`,
+                      boxShadow: SHADOW.lg,
+                    }}
+                  >
+                    <BrandLogo size={92} />
+                  </Box>
+                </m.div>
+
+                <m.div
+                  initial={prefersReducedMotion ? undefined : { opacity: 0, y: 12 }}
+                  animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, ease: EASE.standard, delay: 0.28 }}
+                >
+                  <Typography
+                    component="p"
+                    sx={{
+                      fontWeight: 800,
+                      letterSpacing: '-0.02em',
+                      lineHeight: 1.2,
+                      fontSize: { xs: '1.25rem', md: '1.5rem' },
+                    }}
+                  >
+                    Manisha Readymades
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ opacity: 0.75, mt: 1, maxWidth: '30ch', mx: 'auto' }}
+                  >
+                    {HERO_BRAND_CAPTION}
+                  </Typography>
+                </m.div>
+              </Box>
+            )}
 
             {heroImage && (
               <Box
