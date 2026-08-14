@@ -6,6 +6,7 @@
 import CloseIcon from '@mui/icons-material/Close';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import MenuIcon from '@mui/icons-material/Menu';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import AppBar from '@mui/material/AppBar';
@@ -31,7 +32,7 @@ import { HeaderSearch } from '@/components/layout/HeaderSearch';
 import { useScrolled } from '@/hooks/useScrolled';
 import { publicEnv } from '@/lib/env';
 import { DURATION, EASE, staggerContainer } from '@/theme/motion';
-import { OUTER_SPACING } from '@/theme/spacing';
+import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
 import {
   ANNOUNCEMENT_HEIGHT,
   HEADER_HEIGHT,
@@ -157,6 +158,18 @@ interface StoreLayoutProps {
    * rather than acquiring a server round-trip purely to draw navigation.
    */
   categories?: readonly CategoryWithParent[];
+  /**
+   * Pixels of clearance to add beneath the footer on phones, for pages that
+   * pin a control to the bottom of the viewport.
+   *
+   * @remarks
+   * The page cannot solve this itself. Its own bottom padding lives inside
+   * `children`, and the footer renders after them — so a fixed bar covers the
+   * end of the footer no matter how much padding the page adds. The spacer has
+   * to sit inside the footer to keep its background colour, rather than below
+   * it where it would show a band of page canvas.
+   */
+  mobileBottomInset?: number;
 }
 
 /**
@@ -171,6 +184,7 @@ export function StoreLayout({
   description = 'Wholesale readymade garments — men’s, women’s and kids’ clothing at wholesale prices.',
   topBanners = [],
   categories = [],
+  mobileBottomInset = 0,
 }: StoreLayoutProps): JSX.Element {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const router = useRouter();
@@ -608,9 +622,52 @@ export function StoreLayout({
           </Box>
 
           <Divider sx={{ my: OUTER_SPACING, borderColor: 'rgba(255,255,255,0.12)' }} />
-          <Typography variant="caption" sx={{ opacity: 0.6 }}>
-            © {new Date().getFullYear()} Manisha Readymades. All rights reserved.
-          </Typography>
+
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            justifyContent="space-between"
+            alignItems={{ xs: 'flex-start', sm: 'center' }}
+            spacing={INNER_SPACING}
+          >
+            <Typography variant="caption" sx={{ opacity: 0.6 }}>
+              © {new Date().getFullYear()} Manisha Readymades. All rights reserved.
+            </Typography>
+
+            {/*
+              Staff sign-in. It belongs in the footer's bottom bar rather than
+              in Explore: shoppers have no use for it, and the bottom bar is
+              where every site puts the links that exist for the people running
+              it. `nofollow` keeps crawlers off a page that only rejects them —
+              the login screen is already `noindex`.
+            */}
+            <Link
+              component={NextLink}
+              href="/admin/login"
+              rel="nofollow"
+              color="inherit"
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.5,
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                opacity: 0.55,
+                textDecoration: 'none',
+                transition: 'opacity 180ms',
+                '&:hover': { opacity: 1 },
+              }}
+            >
+              <LockOutlinedIcon sx={{ fontSize: 13 }} />
+              Staff login
+            </Link>
+          </Stack>
+
+          {mobileBottomInset > 0 && (
+            <Box
+              aria-hidden
+              sx={{ display: { xs: 'block', md: 'none' }, height: `${mobileBottomInset}px` }}
+            />
+          )}
         </Container>
       </Box>
     </Box>
