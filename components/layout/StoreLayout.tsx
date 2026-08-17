@@ -567,7 +567,7 @@ export function StoreLayout({
                 </Typography>
               </Stack>
               <Typography variant="body2" sx={{ opacity: 0.72, mt: 1.5, maxWidth: 340, lineHeight: 1.7 }}>
-                Wholesale garment supplier since 2020. Bulk orders, custom printing and fast
+                Wholesale garment supplier since 2008. Bulk orders, custom printing and fast
                 WhatsApp support.
               </Typography>
             </Box>
