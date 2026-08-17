@@ -225,7 +225,7 @@ export default function ContactPage(): JSX.Element {
                   align="center"
                   sx={{ maxWidth: '28ch' }}
                 >
-                  Wholesale garment supplier since 2020.
+                  Wholesale garment supplier since 2008.
                 </Typography>
               </Stack>
             </Reveal>

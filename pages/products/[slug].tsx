@@ -131,13 +131,23 @@ export default function ProductDetailPage({
             sx={{
               display: 'grid',
               gap: { xs: 3, md: 6 },
-              gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(0, 1fr)' },
+              // `minmax(0, …)` rather than a bare `1fr`, which means
+              // `minmax(auto, 1fr)` and so refuses to shrink below the column's
+              // min-content width. The thumbnail strip's fixed-width tiles set
+              // that minimum, so a product with five or more images pushed the
+              // gallery wider than the phone screen and the overflow was
+              // silently clipped instead of scrolled.
+              gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) minmax(0, 1fr)' },
               alignItems: 'start',
             }}
           >
             {/* Gallery */}
             <Box
               sx={{
+                // A grid item's default `min-width: auto` would let the strip
+                // below push this item past its track, undoing the clamp on the
+                // track itself.
+                minWidth: 0,
                 // The gallery stays in view while the specification list is
                 // read on desktop — the picture is the thing being judged.
                 position: { md: 'sticky' },
@@ -146,11 +156,14 @@ export default function ProductDetailPage({
             >
               <Box
                 sx={{
-                  // Square on phones, where the gallery is full-bleed and a
-                  // 3:4 frame filled most of the screen before any detail was
-                  // visible. The taller ratio is kept on desktop, where the
-                  // image shares the row with the specification column.
-                  aspectRatio: { xs: '1 / 1', md: '3 / 4' },
+                  // 4:5 on phones: garments are photographed portrait, so a
+                  // square frame wasted the sides, while the 3:4 this started
+                  // as filled the screen before any detail was visible. Square
+                  // again on tablets, which are still one column wide — the
+                  // portrait ratio there would run to nearly 900px tall. The
+                  // tallest ratio returns on desktop, where the image shares
+                  // the row with the specification column.
+                  aspectRatio: { xs: '4 / 5', sm: '1 / 1', md: '3 / 4' },
                   bgcolor: SURFACE.subtle,
                   borderRadius: `${RADIUS.md}px`,
                   overflow: 'hidden',
@@ -164,22 +177,36 @@ export default function ProductDetailPage({
                     key={currentImage.publicId}
                     src={currentImage.url}
                     alt={currentImage.alt ?? product.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    // Contained, not cropped. Images are served at whatever
+                    // ratio they were uploaded at — no Cloudinary transform
+                    // normalises them — so `cover` cut the top and bottom off
+                    // any portrait photo. A buyer judging a garment has to see
+                    // all of it; the tinted frame absorbs the letterboxing.
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                   />
                 )}
               </Box>
 
               {product.images.length > 1 && (
-                <Stack
-                  direction="row"
-                  spacing={INNER_SPACING}
+                <Box
                   sx={{
                     mt: INNER_SPACING,
+                    display: 'flex',
+                    gap: INNER_SPACING,
                     // Many thumbnails scroll horizontally inside their own strip
                     // rather than wrapping into a block that shifts the layout.
                     overflowX: 'auto',
+                    // Without this the strip reports its full content width as
+                    // its own, so it never overflows and never scrolls.
+                    minWidth: 0,
                     pb: 0.5,
                     scrollbarWidth: 'thin',
+                    // Phones have no visible scrollbar, so the affordance is a
+                    // tile left half-showing at the edge; snapping stops a drag
+                    // ending on a sliver of one.
+                    scrollSnapType: 'x proximity',
+                    WebkitOverflowScrolling: 'touch',
+                    overscrollBehaviorX: 'contain',
                   }}
                 >
                   {product.images.map((image, index) => {
@@ -194,6 +221,7 @@ export default function ProductDetailPage({
                         onClick={() => setActiveImage(index)}
                         sx={{
                           flexShrink: 0,
+                          scrollSnapAlign: 'start',
                           width: 68,
                           height: 68,
                           p: 0,
@@ -218,7 +246,7 @@ export default function ProductDetailPage({
                       </Box>
                     );
                   })}
-                </Stack>
+                </Box>
               )}
             </Box>
 

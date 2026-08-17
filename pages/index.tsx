@@ -41,7 +41,7 @@ import { buildGeneralEnquiryLink } from '@/utils/whatsapp';
 
 /** Selling points shown in the "Why choose us" section. */
 const HIGHLIGHTS = [
-  { title: 'Since 2020', detail: 'Five years supplying retailers across the region.' },
+  { title: 'Since 2008', detail: 'Nearly two decades supplying retailers across the region.' },
   { title: 'Best quality', detail: 'Fabric checked before every dispatch.' },
   { title: 'Wholesale prices', detail: 'Rates that leave room for your margin.' },
   { title: 'Fast WhatsApp support', detail: 'Same-day replies on orders and stock.' },

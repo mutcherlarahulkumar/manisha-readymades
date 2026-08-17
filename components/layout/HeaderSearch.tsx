@@ -69,7 +69,10 @@ export function HeaderSearch({ onSubmitted, fullWidth = false }: HeaderSearchPro
         display: 'flex',
         alignItems: 'center',
         gap: 0.5,
-        width: fullWidth ? '100%' : { md: 260, lg: 360 },
+        // Always fills whatever the caller gives it. The header sizes its own
+        // slot, so the field can give width back to the nav and the WhatsApp
+        // button when the row is tight rather than pushing them off the edge.
+        width: '100%',
         pl: 1.5,
         pr: 0.5,
         py: 0.25,
