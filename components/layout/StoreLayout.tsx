@@ -292,7 +292,9 @@ export function StoreLayout({
           <Toolbar
             disableGutters
             sx={{
-              gap: { xs: 1, md: 2, lg: 3 },
+              // Tighter between md and lg, where the row has four fixed blocks
+              // and barely fits; it opens back up once there is room.
+              gap: { xs: 1, md: 1.5, lg: 3 },
               // Condensing on scroll returns vertical space to the content.
               // Animating `min-height` is a layout property, but it changes once
               // per scroll-state flip rather than per frame, so it is not on a
@@ -348,7 +350,8 @@ export function StoreLayout({
                     fontWeight: 800,
                     letterSpacing: '-0.03em',
                     lineHeight: 1.1,
-                    fontSize: '1.25rem',
+                    // Steps down where the header row is tightest.
+                    fontSize: { md: '1.0625rem', lg: '1.25rem' },
                   }}
                 >
                   Manisha Readymades
@@ -369,15 +372,26 @@ export function StoreLayout({
               </Box>
             </Box>
 
-            <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+            {/* The one item in the row that yields. Everything either side of
+                it is fixed-size, so without a shrinkable slot the line overran
+                its own width between roughly 900 and 1200px and the WhatsApp
+                button was clipped off the right edge. */}
+            <Box
+              sx={{
+                display: { xs: 'none', md: 'block' },
+                flexShrink: 1,
+                flexBasis: { md: 260, lg: 360 },
+                minWidth: 132,
+              }}
+            >
               <HeaderSearch />
             </Box>
 
             <Stack
               direction="row"
-              spacing={{ md: 2, lg: 3 }}
+              spacing={{ md: 1.5, lg: 3 }}
               alignItems="center"
-              sx={{ display: { xs: 'none', md: 'flex' } }}
+              sx={{ display: { xs: 'none', md: 'flex' }, flexShrink: 0 }}
             >
               {NAV_LINKS.map((link) => (
                 <NavLink
