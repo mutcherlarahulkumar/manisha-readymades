@@ -14,14 +14,15 @@ import { BrandLogo } from '@/components/layout/BrandLogo';
  * Path to the complete artwork — the mark together with the wordmark beneath it.
  *
  * @remarks
- * Distinct from the header's `logo.png`, which is the mark on its own. This is
- * the version to use where the brand is the subject rather than a label on
- * navigation: it is shown large, with nothing else nearby setting the name.
+ * The same file the header uses, because the supplied artwork *is* the full
+ * lockup. Here it is shown whole and large, which is what it was drawn for;
+ * `BrandLogo` crops the mark out of it for the small, navigational placements
+ * where the name is already set in type alongside.
  *
  * Until the file exists the lockup is composed from the monogram and the brand
  * name in type, so the space is never empty and nothing renders broken.
  */
-const LOCKUP_SRC = '/logo-full.png';
+const LOCKUP_SRC = '/logo.png';
 
 /** Props for {@link BrandLockup}. */
 interface BrandLockupProps {
