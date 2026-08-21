@@ -13,7 +13,14 @@ import { requireSession } from '@/lib/auth';
 import { createUploadSignature } from '@/lib/cloudinary';
 
 /** Folders an admin is permitted to upload into. */
-const ALLOWED_FOLDERS = ['products', 'banners', 'orders', 'categories', 'brands'] as const;
+const ALLOWED_FOLDERS = [
+  'products',
+  'banners',
+  'orders',
+  'categories',
+  'brands',
+  'catalogue',
+] as const;
 
 /** @see ALLOWED_FOLDERS */
 type AllowedFolder = (typeof ALLOWED_FOLDERS)[number];

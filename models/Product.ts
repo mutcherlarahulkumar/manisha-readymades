@@ -32,6 +32,7 @@ export interface ProductDocument {
   price: number;
   status: ProductStatus;
   isFeatured: boolean;
+  isBestSeller: boolean;
   ratingAverage: number;
   ratingCount: number;
   createdAt: Date;
@@ -93,6 +94,7 @@ const productSchema = new Schema<ProductDocument>(
     },
     status: { type: String, enum: PRODUCT_STATUSES, required: true, default: 'active', index: true },
     isFeatured: { type: Boolean, required: true, default: false, index: true },
+    isBestSeller: { type: Boolean, required: true, default: false, index: true },
     ratingAverage: { type: Number, required: true, default: 0, min: 0, max: 5 },
     ratingCount: { type: Number, required: true, default: 0, min: 0 },
   },

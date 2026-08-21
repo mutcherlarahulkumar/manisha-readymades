@@ -47,6 +47,7 @@ export const productCreateSchema = yup.object({
     .required('Price is required'),
   status: yup.string().oneOf(PRODUCT_STATUSES).default('active').required(),
   isFeatured: yup.boolean().default(false).required(),
+  isBestSeller: yup.boolean().default(false).required(),
 });
 
 /** Payload accepted when updating a product — same rules, SKU still immutable. */

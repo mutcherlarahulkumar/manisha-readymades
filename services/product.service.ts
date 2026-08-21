@@ -12,6 +12,7 @@ import { ApiError } from '@/lib/api/ApiError';
 import { serialize } from '@/lib/serialize';
 import { Brand } from '@/models/Brand';
 import { Category } from '@/models/Category';
+import { Event } from '@/models/Event';
 import { Product, type ProductDocument } from '@/models/Product';
 import { Review } from '@/models/Review';
 import { applyDiscounts, getActiveDiscounts } from '@/services/pricing.service';
@@ -167,6 +168,81 @@ export async function listProducts(
       totalPages: Math.max(1, Math.ceil(total / query.limit)),
     },
   };
+}
+
+/**
+ * How far back enquiry clicks count towards the automatic best-seller list.
+ *
+ * @remarks
+ * A quarter is long enough to survive a quiet fortnight and short enough that
+ * last season's stock stops being described as best selling. Raw events expire
+ * after 180 days regardless, so nothing older is available anyway.
+ */
+const BEST_SELLER_WINDOW_DAYS = 90;
+
+/**
+ * Lists the products to show under "Best Selling".
+ *
+ * @param limit - Maximum products to return.
+ * @returns Hand-picked products first, topped up by demand.
+ *
+ * @remarks
+ * Hand-picked entries come first, because the owner knows what is moving before
+ * the data does. When fewer than `limit` are flagged, the remainder is filled
+ * with the products enquired about most over {@link BEST_SELLER_WINDOW_DAYS} —
+ * so a shop that has never touched the flag still gets a meaningful row rather
+ * than an empty one, and the section never appears broken on a new deployment.
+ *
+ * Falls back silently to nothing when neither source yields anything, which the
+ * home page renders by omitting the section entirely.
+ */
+export async function listBestSellers(limit: number): Promise<ProductListItem[]> {
+  const flagged = await Product.find({ status: 'active', isBestSeller: true })
+    .populate('brand', 'name slug')
+    .populate('category', 'name slug')
+    .sort({ updatedAt: -1 })
+    .limit(limit)
+    .lean<PopulatedProduct[]>();
+
+  const shortfall = limit - flagged.length;
+  let topUp: PopulatedProduct[] = [];
+
+  if (shortfall > 0) {
+    const since = new Date(Date.now() - BEST_SELLER_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    const alreadyIncluded = flagged.map((doc) => doc._id);
+
+    const ranked = await Event.aggregate<{ _id: Types.ObjectId }>([
+      {
+        $match: {
+          type: 'whatsapp_click',
+          product: { $ne: null, $nin: alreadyIncluded },
+          createdAt: { $gte: since },
+        },
+      },
+      { $group: { _id: '$product', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: shortfall },
+    ]);
+
+    if (ranked.length > 0) {
+      const rankedIds = ranked.map((row) => row._id);
+      const docs = await Product.find({ _id: { $in: rankedIds }, status: 'active' })
+        .populate('brand', 'name slug')
+        .populate('category', 'name slug')
+        .lean<PopulatedProduct[]>();
+
+      // `$in` returns documents in natural order, discarding the ranking the
+      // aggregation just established, so it is reapplied here.
+      const order = new Map(rankedIds.map((id, index) => [id.toString(), index]));
+      topUp = docs.sort(
+        (a, b) =>
+          (order.get(String(a._id)) ?? 0) - (order.get(String(b._id)) ?? 0),
+      );
+    }
+  }
+
+  const discounts = await getActiveDiscounts();
+  return [...flagged, ...topUp].map((doc) => toListItem(doc, discounts));
 }
 
 /**

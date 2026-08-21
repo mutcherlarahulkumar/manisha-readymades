@@ -12,6 +12,8 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import CategoryIcon from '@mui/icons-material/Category';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ImageIcon from '@mui/icons-material/Image';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import BrushIcon from '@mui/icons-material/Brush';
 import InventoryIcon from '@mui/icons-material/Inventory2';
 import LabelIcon from '@mui/icons-material/LocalOffer';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -20,6 +22,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import ReceiptIcon from '@mui/icons-material/ReceiptLong';
 import SellIcon from '@mui/icons-material/Sell';
+import StorefrontIcon from '@mui/icons-material/Storefront';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
@@ -80,12 +83,15 @@ const NAV_GROUPS: ReadonlyArray<{ heading: string; items: readonly NavItem[] }> 
     items: [
       { href: '/admin/discounts', label: 'Discounts', icon: <LabelIcon /> },
       { href: '/admin/banners', label: 'Banners', icon: <ImageIcon /> },
+      { href: '/admin/catalogue', label: 'Catalogue', icon: <MenuBookIcon /> },
+      { href: '/admin/print-samples', label: 'Printing samples', icon: <BrushIcon /> },
     ],
   },
   {
     heading: 'Internal',
     items: [
       { href: '/admin/orders', label: 'Orders', icon: <ReceiptIcon /> },
+      { href: '/admin/retailers', label: 'Retailers', icon: <StorefrontIcon /> },
       { href: '/admin/staff', label: 'Staff', icon: <PeopleIcon />, roles: ['owner'] },
     ],
   },

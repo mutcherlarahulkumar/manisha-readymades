@@ -4,6 +4,7 @@
  * @module components/layout/StoreLayout
  */
 import CloseIcon from '@mui/icons-material/Close';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
@@ -12,6 +13,7 @@ import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Collapse from '@mui/material/Collapse';
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
@@ -63,6 +65,7 @@ const NAV_LINKS = [
  */
 const FOOTER_LINKS = [
   ...NAV_LINKS,
+  { href: '/become-a-retailer', label: 'Become a Retailer' },
   { href: '/categories', label: 'Categories' },
   { href: '/brands', label: 'Brands' },
 ] as const;
@@ -187,11 +190,14 @@ export function StoreLayout({
   mobileBottomInset = 0,
 }: StoreLayoutProps): JSX.Element {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  /** Which main category's sub-categories are showing in the drawer. */
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const router = useRouter();
   const isScrolled = useScrolled(8);
   const announcement = topBanners[0];
   const prefersReducedMotion = useReducedMotion();
   const pageTitle = title ? `${title} · Manisha Readymades` : 'Manisha Readymades · Wholesale Garment Supplier';
+  const topLevelCategories = categories.filter((category) => category.parent === null);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -403,6 +409,27 @@ export function StoreLayout({
               ))}
             </Stack>
 
+            {/*
+              The header's primary call to action. A wholesale buyer arriving
+              for the first time is worth more than another route to WhatsApp,
+              which the site already offers on every product, in the drawer, in
+              the footer and on the contact page.
+            */}
+            <Button
+              component={NextLink}
+              href="/become-a-retailer"
+              variant="contained"
+              size="small"
+              sx={{ display: { xs: 'none', md: 'inline-flex' }, flexShrink: 0, whiteSpace: 'nowrap' }}
+            >
+              Become a Retailer
+            </Button>
+
+            {/*
+              Held back until there is room for both. Between md and lg the row
+              cannot fit two calls to action beside the brand, the search field
+              and four nav links without clipping one of them off the edge.
+            */}
             <Button
               variant="contained"
               color="success"
@@ -411,7 +438,7 @@ export function StoreLayout({
               href={buildGeneralEnquiryLink()}
               target="_blank"
               rel="noopener noreferrer"
-              sx={{ display: { xs: 'none', md: 'inline-flex' }, flexShrink: 0 }}
+              sx={{ display: { xs: 'none', lg: 'inline-flex' }, flexShrink: 0 }}
             >
               WhatsApp
             </Button>
@@ -530,20 +557,134 @@ export function StoreLayout({
             </Stack>
           </m.nav>
 
+          {/*
+            The category tree, which on desktop lives in the strip's hover
+            menus. Touch has no hover, so without this the sub-categories would
+            be reachable only through the catalogue's own filters — the drawer
+            is where a phone user expects to find the full index.
+          */}
+          {topLevelCategories.length > 0 && (
+            <Box sx={{ mt: OUTER_SPACING }}>
+              <Divider sx={{ mb: INNER_SPACING }} />
+              <Typography variant="overline" color="text.secondary" component="p" sx={{ mb: 1 }}>
+                Shop by category
+              </Typography>
+
+              <Stack component="ul" sx={{ listStyle: 'none', p: 0, m: 0 }}>
+                {topLevelCategories.map((category, index) => {
+                  const children = categories.filter(
+                    (entry) => entry.parent?._id === category._id,
+                  );
+                  const isExpanded = expandedCategory === category._id;
+                  // The block below the list draws its own rule, so the last
+                  // row must not add a second one against it.
+                  const isLast = index === topLevelCategories.length - 1;
+
+                  return (
+                    <Box component="li" key={category._id}>
+                      <Stack direction="row" alignItems="center">
+                        <Box
+                          component={NextLink}
+                          href={`/products?categories=${category.slug}`}
+                          onClick={() => setIsDrawerOpen(false)}
+                          sx={{
+                            flexGrow: 1,
+                            minWidth: 0,
+                            py: 1.5,
+                            fontSize: '1rem',
+                            fontWeight: 600,
+                            color: 'text.primary',
+                            textDecoration: 'none',
+                          }}
+                        >
+                          {category.name}
+                        </Box>
+
+                        {/* Separate from the link: tapping the name browses the
+                            whole category, tapping the chevron narrows it. */}
+                        {children.length > 0 && (
+                          <IconButton
+                            size="small"
+                            aria-expanded={isExpanded}
+                            aria-label={`${isExpanded ? 'Hide' : 'Show'} ${category.name} sub-categories`}
+                            onClick={() =>
+                              setExpandedCategory(isExpanded ? null : category._id)
+                            }
+                          >
+                            <ExpandMoreIcon
+                              sx={{
+                                transform: isExpanded ? 'rotate(180deg)' : 'none',
+                                transition: 'transform 180ms',
+                                '@media (prefers-reduced-motion: reduce)': {
+                                  transition: 'none',
+                                },
+                              }}
+                            />
+                          </IconButton>
+                        )}
+                      </Stack>
+
+                      <Collapse in={isExpanded} unmountOnExit>
+                        <Stack component="ul" sx={{ listStyle: 'none', p: 0, m: 0, pb: 1 }}>
+                          {children.map((child) => (
+                            <Box component="li" key={child._id}>
+                              <Box
+                                component={NextLink}
+                                href={`/products?categories=${child.slug}`}
+                                onClick={() => setIsDrawerOpen(false)}
+                                sx={{
+                                  display: 'block',
+                                  py: 1.25,
+                                  pl: 2,
+                                  fontSize: '0.9375rem',
+                                  color: 'text.secondary',
+                                  textDecoration: 'none',
+                                  '&:active': { color: 'primary.main' },
+                                }}
+                              >
+                                {child.name}
+                              </Box>
+                            </Box>
+                          ))}
+                        </Stack>
+                      </Collapse>
+
+                      {!isLast && <Divider />}
+                    </Box>
+                  );
+                })}
+              </Stack>
+            </Box>
+          )}
+
           <Box sx={{ mt: 'auto', pt: 3 }}>
             <Divider sx={{ mb: OUTER_SPACING }} />
-            <Button
-              fullWidth
-              size="large"
-              variant="contained"
-              color="success"
-              startIcon={<WhatsAppIcon />}
-              href={buildGeneralEnquiryLink()}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              WhatsApp Us
-            </Button>
+            <Stack spacing={INNER_SPACING}>
+              {/* Carried here in full, because the header button that holds
+                  this place on desktop is hidden on a phone. */}
+              <Button
+                component={NextLink}
+                href="/become-a-retailer"
+                fullWidth
+                size="large"
+                variant="contained"
+                onClick={() => setIsDrawerOpen(false)}
+              >
+                Become a Retailer
+              </Button>
+              <Button
+                fullWidth
+                size="large"
+                variant="outlined"
+                color="success"
+                startIcon={<WhatsAppIcon />}
+                href={buildGeneralEnquiryLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                WhatsApp Us
+              </Button>
+            </Stack>
           </Box>
         </Box>
       </Drawer>

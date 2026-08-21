@@ -52,13 +52,22 @@ interface ImageUploaderProps {
   name: string;
   label: string;
   /** Cloudinary sub-folder; must be one the API allows. */
-  folder: 'products' | 'banners' | 'orders' | 'categories' | 'brands';
+  folder: 'products' | 'banners' | 'orders' | 'categories' | 'brands' | 'catalogue';
   /** Maximum number of files. Ignored when `single` is set. */
   maxFiles?: number;
   /** Store a single `ImageAsset` rather than an array. */
   single?: boolean;
-  /** Also accept PDFs, for order attachments. */
+  /** Also accept PDFs, for order attachments and the wholesale catalogue. */
   allowDocuments?: boolean;
+  /**
+   * Size ceiling in bytes. Defaults to {@link MAX_FILE_BYTES}.
+   *
+   * @remarks
+   * Files go straight from the browser to Cloudinary, so the serverless body
+   * limit never applies and a document can be allowed to be far larger than a
+   * product photograph. Cloudinary's own per-plan ceiling still governs.
+   */
+  maxBytes?: number;
   helperText?: string;
 }
 
@@ -107,6 +116,7 @@ export function ImageUploader({
   maxFiles = 8,
   single = false,
   allowDocuments = false,
+  maxBytes = MAX_FILE_BYTES,
   helperText,
 }: ImageUploaderProps): JSX.Element {
   const [field, meta] = useField<ImageAsset[] | ImageAsset | null>(name);
@@ -128,9 +138,11 @@ export function ImageUploader({
       const selected = Array.from(files).slice(0, remaining);
       if (selected.length === 0) return;
 
-      const oversized = selected.find((file) => file.size > MAX_FILE_BYTES);
+      const oversized = selected.find((file) => file.size > maxBytes);
       if (oversized) {
-        notifyError(`${oversized.name} is larger than 8 MB.`);
+        notifyError(
+          `${oversized.name} is larger than ${Math.round(maxBytes / (1024 * 1024))} MB.`,
+        );
         return;
       }
 
@@ -153,7 +165,7 @@ export function ImageUploader({
         if (inputRef.current) inputRef.current.value = '';
       }
     },
-    [assets, folder, name, remaining, setFieldTouched, setFieldValue, single],
+    [assets, folder, maxBytes, name, remaining, setFieldTouched, setFieldValue, single],
   );
 
   const handleRemove = useCallback(
@@ -288,7 +300,7 @@ export function ImageUploader({
             </Typography>
 
             <Typography variant="caption" color="text.secondary">
-              {acceptedLabel} · up to 8 MB
+              {acceptedLabel} · up to {Math.round(maxBytes / (1024 * 1024))} MB
               {!single && remaining > 0 && ` · ${remaining} of ${limit} remaining`}
             </Typography>
           </>

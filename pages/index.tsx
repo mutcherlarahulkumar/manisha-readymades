@@ -22,6 +22,7 @@ import NextLink from 'next/link';
 import { useState } from 'react';
 
 import { EmptyState } from '@/components/common/StateViews';
+import { CatalogueDownload } from '@/components/common/CatalogueDownload';
 import { PageContainer, Section } from '@/components/common/PageContainer';
 import { BrandLogo } from '@/components/layout/BrandLogo';
 import { StoreLayout } from '@/components/layout/StoreLayout';
@@ -29,12 +30,13 @@ import { Reveal, RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import { ProductGrid } from '@/components/product/ProductCard';
 import { connectToDatabase } from '@/lib/mongodb';
 import { listBanners } from '@/services/marketing.service';
-import { listProducts } from '@/services/product.service';
+import { listBestSellers, listProducts } from '@/services/product.service';
+import { getCatalogue } from '@/services/catalogue.service';
 import { listCategories } from '@/services/taxonomy.service';
 import { EASE, heroRise, staggerContainer } from '@/theme/motion';
 import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
 import { RADIUS, SHADOW, SHELL_MAX_WIDTH, SURFACE } from '@/theme/tokens';
-import type { Banner, CategoryWithParent, ProductListItem } from '@/types/models';
+import type { Banner, Catalogue, CategoryWithParent, ProductListItem } from '@/types/models';
 import { QuoteRequestDialog } from '@/components/quote/QuoteRequestDialog';
 import { productQuerySchema } from '@/validation/product.schema';
 import { buildGeneralEnquiryLink } from '@/utils/whatsapp';
@@ -59,6 +61,16 @@ const HIGHLIGHTS = [
  */
 const HERO_BRAND_CAPTION = 'The best clothing store in Vizianagaram.';
 
+/**
+ * How many products each of the New Stock and Best Selling rails shows.
+ *
+ * @remarks
+ * Exactly one row on desktop and two on a phone. The home page carries three
+ * product rails; at eight apiece it would take a dozen screens of scrolling to
+ * reach the rest of the page.
+ */
+const RAIL_SIZE = 4;
+
 /** Custom printing services offered. */
 const PRINTING_SERVICES = [
   'School Uniforms',
@@ -73,6 +85,12 @@ interface HomePageProps {
   banners: Banner[];
   categories: CategoryWithParent[];
   featured: ProductListItem[];
+  /** Most recently added stock, for the New Stock rail. */
+  newest: ProductListItem[];
+  /** Hand-picked best sellers, topped up by enquiry volume. */
+  bestSellers: ProductListItem[];
+  /** The downloadable catalogue, or `null` when none is uploaded. */
+  catalogue: Catalogue | null;
 }
 
 /**
@@ -81,7 +99,14 @@ interface HomePageProps {
  * @param props - Server-rendered banners, categories and featured products.
  * @returns The home page.
  */
-export default function HomePage({ banners, categories, featured }: HomePageProps): JSX.Element {
+export default function HomePage({
+  banners,
+  categories,
+  featured,
+  newest,
+  bestSellers,
+  catalogue,
+}: HomePageProps): JSX.Element {
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
   const prefersReducedMotion = useReducedMotion();
   const topBanners = banners.filter((banner) => banner.position === 'top');
@@ -365,6 +390,61 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
 
       <PageContainer>
 
+        {/* The catalogue sits above the rails: a retailer who wants the whole
+            range in one file should not have to scroll past three of them. */}
+        {catalogue && (
+          <Box sx={{ pt: { xs: 3, md: 5 } }}>
+            <Reveal>
+              <CatalogueDownload catalogue={catalogue} />
+            </Reveal>
+          </Box>
+        )}
+
+        {/*
+          Three product rails run in decreasing order of how much a wholesale
+          buyer is likely to act on them: what just landed, what everyone else
+          is buying, then the owner's own picks. Each is short — one desktop row
+          — so the page stays scannable rather than becoming three catalogues
+          stacked on top of each other.
+        */}
+        {newest.length > 0 && (
+          <Section
+            title="New Stock"
+            subtitle="The latest arrivals, freshly added to the catalogue."
+            action={
+              <Button
+                component={NextLink}
+                href="/products?sort=newest"
+                variant="outlined"
+                endIcon={<ArrowForwardIcon />}
+              >
+                See what’s new
+              </Button>
+            }
+          >
+            <ProductGrid products={newest} />
+          </Section>
+        )}
+
+        {bestSellers.length > 0 && (
+          <Section
+            title="Best Selling"
+            subtitle="What retailers are ordering most."
+            action={
+              <Button
+                component={NextLink}
+                href="/products"
+                variant="outlined"
+                endIcon={<ArrowForwardIcon />}
+              >
+                Browse all
+              </Button>
+            }
+          >
+            <ProductGrid products={bestSellers} />
+          </Section>
+        )}
+
         <Section
           title="Featured Products"
           subtitle="Hand-picked stock, ready to ship."
@@ -512,12 +592,30 @@ export default function HomePage({ banners, categories, featured }: HomePageProp
 export const getServerSideProps: GetServerSideProps<HomePageProps> = async () => {
   await connectToDatabase();
 
-  const query = await productQuerySchema.validate({ featured: true, limit: 8 });
-  const [banners, categories, products] = await Promise.all([
-    listBanners({ visibleOnly: true }),
-    listCategories({ activeOnly: true }),
-    listProducts(query),
+  // Each rail is its own short row rather than one long grid, so they are
+  // fetched with their own limits and run together.
+  const [featuredQuery, newestQuery] = await Promise.all([
+    productQuerySchema.validate({ featured: true, limit: 8 }),
+    productQuerySchema.validate({ sort: 'newest', limit: RAIL_SIZE }),
   ]);
 
-  return { props: { banners, categories, featured: products.items } };
+  const [banners, categories, featured, newest, bestSellers, catalogue] = await Promise.all([
+    listBanners({ visibleOnly: true }),
+    listCategories({ activeOnly: true }),
+    listProducts(featuredQuery),
+    listProducts(newestQuery),
+    listBestSellers(RAIL_SIZE),
+    getCatalogue(),
+  ]);
+
+  return {
+    props: {
+      banners,
+      categories,
+      featured: featured.items,
+      newest: newest.items,
+      bestSellers,
+      catalogue,
+    },
+  };
 };
