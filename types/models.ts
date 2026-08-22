@@ -52,13 +52,45 @@ export const BANNER_POSITIONS = ['top', 'hero'] as const;
 /** @see BANNER_POSITIONS */
 export type BannerPosition = (typeof BANNER_POSITIONS)[number];
 
+/** Review stages of a wholesale account request. */
+export const RETAILER_STATUSES = ['new', 'contacted', 'approved', 'rejected'] as const;
+/** @see RETAILER_STATUSES */
+export type RetailerStatus = (typeof RETAILER_STATUSES)[number];
+
 /** Analytics event kinds recorded from the storefront. */
 export const EVENT_TYPES = ['product_view', 'whatsapp_click'] as const;
 /** @see EVENT_TYPES */
 export type EventType = (typeof EVENT_TYPES)[number];
 
-/** Garment sizes offered. */
-export const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size'] as const;
+/**
+ * Garment sizes offered.
+ *
+ * @remarks
+ * Two conventions in one list, in the order a person reads them: the lettered
+ * run used for outerwear, then the numeric run used for innerwear and waist
+ * sizing. Both are stored as plain strings, so a product carries whichever
+ * applies to it — a t-shirt is tagged `M`, a vest `85`.
+ *
+ * Append-only. The values are persisted on every product document and written
+ * into `/products?sizes=` links, so removing or renaming one orphans stock and
+ * breaks saved URLs.
+ */
+export const SIZES = [
+  'XS',
+  'S',
+  'M',
+  'L',
+  'XL',
+  'XXL',
+  '3XL',
+  'Free Size',
+  '75',
+  '80',
+  '85',
+  '90',
+  '95',
+  '100',
+] as const;
 /** @see SIZES */
 export type Size = (typeof SIZES)[number];
 
@@ -132,6 +164,8 @@ export interface Product extends BaseEntity {
   price: number;
   status: ProductStatus;
   isFeatured: boolean;
+  /** Hand-picked for the home page's best-selling row. */
+  isBestSeller: boolean;
   /** Mean of approved review ratings, 0 when there are none. */
   ratingAverage: number;
   /** Number of approved reviews. */
@@ -187,6 +221,39 @@ export interface Discount extends BaseEntity {
   startsAt: string;
   endsAt: string;
   isActive: boolean;
+}
+
+/** A photograph of custom printing already done, shown as a sample. */
+export interface PrintSample extends BaseEntity {
+  title: string;
+  description?: string;
+  image: ImageAsset;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+/** The downloadable wholesale catalogue. There is only ever one. */
+export interface Catalogue extends BaseEntity {
+  file: ImageAsset;
+  /** Shown beside the download button, e.g. "Autumn 2026 range". */
+  label?: string;
+}
+
+/** A shop owner's request to buy wholesale. */
+export interface RetailerApplication extends BaseEntity {
+  shopName: string;
+  ownerName: string;
+  phone: string;
+  whatsapp?: string;
+  city: string;
+  state: string;
+  /** 15-character GSTIN, absent for retailers trading below the threshold. */
+  gst?: string;
+  /** Categories or product types the shop wants to stock. */
+  interests: string[];
+  status: RetailerStatus;
+  /** Internal note from whoever reviewed it. */
+  notes?: string;
 }
 
 /** A promotional banner shown on the storefront. */

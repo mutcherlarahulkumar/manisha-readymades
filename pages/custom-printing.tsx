@@ -14,14 +14,19 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import type { GetServerSideProps } from 'next';
 import { useState } from 'react';
 
 import { PageContainer, Section } from '@/components/common/PageContainer';
 import { StoreLayout } from '@/components/layout/StoreLayout';
+import { connectToDatabase } from '@/lib/mongodb';
+import { listPrintSamples } from '@/services/printSample.service';
+import { listCategories } from '@/services/taxonomy.service';
 import { RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import { QuoteRequestDialog } from '@/components/quote/QuoteRequestDialog';
 import { INNER_SPACING, OUTER_SPACING } from '@/theme/spacing';
 import { RADIUS, SHADOW, SURFACE } from '@/theme/tokens';
+import type { CategoryWithParent, PrintSample } from '@/types/models';
 
 /** Services offered. Titles match the options in the quote form. */
 const SERVICES = [
@@ -55,12 +60,24 @@ const PROCESS_STEPS = [
   'Dispatch, with tracking shared over WhatsApp.',
 ] as const;
 
+/** Props supplied by {@link getServerSideProps}. */
+interface CustomPrintingPageProps {
+  /** Photos of work already done. */
+  samples: PrintSample[];
+  /** Feeds the category strip beneath the header. */
+  categories: CategoryWithParent[];
+}
+
 /**
  * The custom printing landing page.
  *
+ * @param props - Server-rendered samples and categories.
  * @returns The page element.
  */
-export default function CustomPrintingPage(): JSX.Element {
+export default function CustomPrintingPage({
+  samples,
+  categories,
+}: CustomPrintingPageProps): JSX.Element {
   // Holds the service to pre-select; `null` means the dialog is closed.
   const [quoteService, setQuoteService] = useState<string | null>(null);
 
@@ -68,6 +85,7 @@ export default function CustomPrintingPage(): JSX.Element {
     <StoreLayout
       title="Custom Printing"
       description="Bulk custom printing for school uniforms, company and event t-shirts, campaigns and promotional clothing."
+      categories={categories}
     >
       <PageContainer>
         <Section
@@ -148,6 +166,68 @@ export default function CustomPrintingPage(): JSX.Element {
           </RevealGroup>
         </Section>
 
+        {/*
+          Work already done, placed between what is offered and how ordering
+          works. A prospective customer reads the services, then wants proof
+          before they read a process — a page that describes printing without
+          showing any is asking to be taken on trust.
+        */}
+        {samples.length > 0 && (
+          <Section
+            title="Our Custom Work"
+            subtitle="T-shirts and uniforms we have printed for schools, companies and events."
+          >
+            <RevealGroup
+              sx={{
+                display: 'grid',
+                gap: OUTER_SPACING,
+                gridTemplateColumns: {
+                  xs: 'repeat(2, minmax(0, 1fr))',
+                  sm: 'repeat(3, minmax(0, 1fr))',
+                  md: 'repeat(4, minmax(0, 1fr))',
+                },
+              }}
+            >
+              {samples.map((sample) => (
+                <RevealItem key={sample._id}>
+                  <Box
+                    sx={{
+                      aspectRatio: '1 / 1',
+                      borderRadius: `${RADIUS.md}px`,
+                      overflow: 'hidden',
+                      bgcolor: SURFACE.subtle,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary asset. */}
+                    <img
+                      src={sample.image.url}
+                      alt={sample.image.alt ?? sample.title}
+                      loading="lazy"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block',
+                      }}
+                    />
+                  </Box>
+
+                  <Typography variant="subtitle2" sx={{ mt: INNER_SPACING, fontWeight: 600 }}>
+                    {sample.title}
+                  </Typography>
+                  {sample.description && (
+                    <Typography variant="body2" color="text.secondary">
+                      {sample.description}
+                    </Typography>
+                  )}
+                </RevealItem>
+              ))}
+            </RevealGroup>
+          </Section>
+        )}
+
         <Section title="How it works">
           {/*
             A numbered sequence rather than a plain list. The connecting rule
@@ -202,3 +282,22 @@ export default function CustomPrintingPage(): JSX.Element {
     </StoreLayout>
   );
 }
+
+/**
+ * Loads the printing samples and the shell's navigation.
+ *
+ * @returns Page props.
+ *
+ * @remarks
+ * This page was static until it acquired admin-managed content. Now that it
+ * makes a server round-trip anyway, it also passes the categories the strip
+ * needs, which it previously omitted rather than pay for that trip.
+ */
+export const getServerSideProps: GetServerSideProps<CustomPrintingPageProps> = async () => {
+  await connectToDatabase();
+  const [samples, categories] = await Promise.all([
+    listPrintSamples({ activeOnly: true }),
+    listCategories({ activeOnly: true }),
+  ]);
+  return { props: { samples, categories } };
+};

@@ -11,6 +11,7 @@ import { publicEnv } from '@/lib/env';
 import type { ProductListItem } from '@/types/models';
 import type { EnquiryFormValues } from '@/validation/enquiry.schema';
 import type { QuoteFormValues } from '@/validation/quote.schema';
+import type { RetailerApplicationValues } from '@/validation/retailer.schema';
 
 /** Country code assumed when a configured number omits one. */
 const DEFAULT_COUNTRY_CODE = '91';
@@ -132,6 +133,37 @@ export function buildGeneralEnquiryLink(): string {
   return buildWhatsAppLink(
     `Hi! I found you online and would like to know more about your wholesale garments.`,
   );
+}
+
+/**
+ * Builds the message announcing a new wholesale account request.
+ *
+ * @param values - The submitted application.
+ * @returns The WhatsApp URL.
+ *
+ * @remarks
+ * Sent after the application has already been stored, so this is a notification
+ * rather than the record itself — if the visitor never sends it, or the message
+ * is lost, the row is still in the admin queue. It leads with the shop and city
+ * because that is what the owner recognises a caller by.
+ */
+export function buildRetailerApplicationLink(values: RetailerApplicationValues): string {
+  const lines = [
+    `Hi! I'd like to buy wholesale from Manisha Readymades.`,
+    ``,
+    `Shop: ${values.shopName}`,
+    `Owner: ${values.ownerName}`,
+    `Phone: ${values.phone}`,
+  ];
+
+  if (values.whatsapp) lines.push(`WhatsApp: ${values.whatsapp}`);
+  lines.push(`Location: ${values.city}, ${values.state}`);
+  if (values.gst) lines.push(`GST: ${values.gst}`);
+  if (values.interests.length > 0) {
+    lines.push(`Interested in: ${values.interests.join(', ')}`);
+  }
+
+  return buildWhatsAppLink(lines.join('\n'));
 }
 
 /**

@@ -40,6 +40,7 @@ const BLANK_PRODUCT: ProductFormValues = {
   price: 0,
   status: 'active',
   isFeatured: false,
+  isBestSeller: false,
 };
 
 /** Props for {@link ProductForm}. */
@@ -68,6 +69,7 @@ function toFormValues(product: ProductListItem): ProductFormValues {
     price: product.price,
     status: product.status,
     isFeatured: product.isFeatured,
+    isBestSeller: product.isBestSeller,
   };
 }
 
@@ -207,6 +209,10 @@ export function ProductForm({ product, categories, brands }: ProductFormProps): 
             <FormCheckboxField
               name="isFeatured"
               label="Show on the home page as a featured product"
+            />
+            <FormCheckboxField
+              name="isBestSeller"
+              label="Show on the home page under Best Selling"
             />
           </FormPanel>
 
